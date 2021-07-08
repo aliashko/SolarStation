@@ -1,8 +1,11 @@
+#pragma once
+
 struct PostData {
     long timestamp;
 
     float temperature;
     float humidity;
+    int raindrop;
 
     float solarVoltage;
     float solarCurrent;

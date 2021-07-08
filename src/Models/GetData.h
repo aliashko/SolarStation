@@ -1,3 +1,5 @@
+#pragma once
+
 struct GetData {
     int lightTimeSleepDurationInMinutes;
     int darkTimeSleepDurationInMinutes;

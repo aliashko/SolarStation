@@ -7,7 +7,7 @@ GsmClient::GsmClient(
 	const char* apn,
 	const char* gprsUser, 
 	const char* gprsPass, 
-	const char* simPin = ""){
+	const char* simPin){
 		_rxPin = rxPin;
 		_txPin = txPin;
 		_apn = apn;
@@ -25,7 +25,7 @@ bool GsmClient::connect(){
 	_client = new TinyGsmClient(*_modem);
 
 	// Set GSM module baud rate
-	TinyGsmAutoBaud(_serialAT, GSM_AUTOBAUD_MIN, GSM_AUTOBAUD_MAX);
+	TinyGsmAutoBaud(*_serialAT, GSM_AUTOBAUD_MIN, GSM_AUTOBAUD_MAX);
 	// _serialAT.begin(9600);
 	delay(6000);
 

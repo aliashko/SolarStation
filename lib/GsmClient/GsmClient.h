@@ -2,6 +2,7 @@
 #include <GsmClientConstants.h>
 #include <TinyGsmClient.h>
 #include <ArduinoHttpClient.h>
+#pragma once
 
 // Set serial for debug console (to the Serial Monitor)
 #define GSM_DEBUG true

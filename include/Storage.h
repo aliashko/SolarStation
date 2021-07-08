@@ -1,5 +1,6 @@
 #include <EEPROM.h>
 #include <Models/Settings.h>
+#pragma once
 
 class Storage
 {

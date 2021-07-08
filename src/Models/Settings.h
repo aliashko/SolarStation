@@ -1,3 +1,5 @@
+#pragma once
+
 struct Settings {
   int lightTimeSleepDurationInMinutes;
   int darkTimeSleepDurationInMinutes;

@@ -1,7 +1,5 @@
 #include <Arduino.h>
-
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 // POWER (MOSFET CONTROLLING)
 const uint8_t SENSORS_POWER_CONTROL_PIN = 0;
@@ -33,5 +31,3 @@ struct BackendClientConfig {
     const char* PostDataEndpoint = "/api/postdata";
     const char* GetUpdatesEndpoint = "/api/getupdates";
 };
-
-#endif
