@@ -1,17 +1,12 @@
 #include <Arduino.h>
-#include "PowerManager.h"
-#include "Storage.h"
-#include "WebClient.h"
+#include <LifecycleManager.h>
 
-PowerManager* powerManager;
-Storage* storage;
-WebClient* webClient;
+LifecycleManager* lifecycleManager;
 
 void setup() {
-
+    lifecycleManager = new LifecycleManager();
 }
 
 void loop() {
-	
-
+	lifecycleManager->iterate();
 }

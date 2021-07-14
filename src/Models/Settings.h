@@ -1,21 +1,23 @@
 #pragma once
+#include "Arduino.h"
 
 struct Settings {
-  int lightTimeSleepDurationInMinutes;
-  int darkTimeSleepDurationInMinutes;
-  int sendDataFrequency;
-  int getDataFrequency;
+  unsigned int lightTimeSleepDurationInMinutes;
+  unsigned int darkTimeSleepDurationInMinutes;
+  unsigned int sendDataFrequency;
+  unsigned int getDataFrequency;
 
   float safeModeVoltage;
   float economyModeVoltage;
 
-  bool debugMode;
-  int _integrityControlKey;
+  String smsInformNumber;
+
+  unsigned long _integrityControlKey;
 };
 
-const int SETTINGS_INTEGRITY_CONTROL_KEY_VALUE = (int)12345678;
+const unsigned long SETTINGS_INTEGRITY_CONTROL_KEY_VALUE = 12345678;
 
-Settings DEFAULT_SETTINGS = Settings {
+const Settings DEFAULT_SETTINGS = {
   .lightTimeSleepDurationInMinutes = 1,
   .darkTimeSleepDurationInMinutes = 1,
   .sendDataFrequency = 1,
@@ -24,6 +26,7 @@ Settings DEFAULT_SETTINGS = Settings {
   .safeModeVoltage = 3.5,
   .economyModeVoltage = 4.0,
 
-  .debugMode = true,
+  .smsInformNumber = "",
+
   ._integrityControlKey = SETTINGS_INTEGRITY_CONTROL_KEY_VALUE
 };

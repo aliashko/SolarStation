@@ -1,11 +1,11 @@
 #pragma once
 
 struct PostData {
-    long timestamp;
+    unsigned long timestamp;
 
     float temperature;
     float humidity;
-    int raindrop;
+    unsigned int raindropLevel;
 
     float solarVoltage;
     float solarCurrent;
@@ -15,6 +15,6 @@ struct PostData {
 
     bool isSafeMode;
     bool isEconomyMode;
-    int restartsCount;
-    int gsmErrors;
+    unsigned long restartsCount;
+    unsigned int gsmErrors;
 };

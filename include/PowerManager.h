@@ -1,5 +1,5 @@
-#include <GyverPower.h>
 #pragma once
+#include <GyverPower.h>
 
 class PowerManager
 {

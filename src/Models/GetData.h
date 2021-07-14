@@ -1,13 +1,13 @@
 #pragma once
 
 struct GetData {
-    int lightTimeSleepDurationInMinutes;
-    int darkTimeSleepDurationInMinutes;
-    int sendDataFrequency;
-    int getDataFrequency;
+    unsigned int lightTimeSleepDurationInMinutes;
+    unsigned int darkTimeSleepDurationInMinutes;
+    unsigned int sendDataFrequency;
+    unsigned int getDataFrequency;
 
     float safeModeVoltage;
     float economyModeVoltage;
 
-    bool debugMode;
+    String smsInformNumber;
 };

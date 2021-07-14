@@ -1,7 +1,7 @@
+#pragma once
 #include "GsmClient.h"
 #include "Models/GetData.h"
 #include "Models/PostData.h"
-#pragma once
 
 class WebClient
 {
@@ -12,4 +12,8 @@ public:
 
 private:
     GsmClient* _gsm;
+
+    int readIntJsonField(String* str, String field);
+    float readFloatJsonField(String* str, String field);
+    String readStringJsonField(String* str, String field);
 };

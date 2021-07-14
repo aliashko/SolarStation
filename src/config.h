@@ -1,5 +1,8 @@
-#include <Arduino.h>
 #pragma once
+#include <Arduino.h>
+
+const unsigned int SENSORS_WARMUP_DELAY_MS = 1000;
+const unsigned int GSM_WARMUP_DELAY_MS = 1000;
 
 // POWER (MOSFET CONTROLLING)
 const uint8_t SENSORS_POWER_CONTROL_PIN = 0;
@@ -14,12 +17,29 @@ const uint8_t INA_I2C_ADDRESS = 0x40; //5V
 // GSM (SIM800L) MODULE - 3.7-4.2V VCC
 const uint8_t SIM800_TX = 6; //3.3V
 const uint8_t SIM800_RX = 7; //3.3V
-const char* APN = "internet";
-const char* GPRS_USER = "";
-const char* GPRS_PASSWORD = "";
+struct GsmConfiguration {
+    const char* SimPin = "";
+    const char* Apn = "internet";
+    const char* GprsUser = "";
+    const char* GprsPassword = "";
+};
+
+// VOLTAGE SENSORS SETTINGS
+//const uint8_t SOLAR_VOLTAGE_PIN = A0;
+const uint8_t BATTERY_VOLTAGE_PIN = A1;
+const uint8_t ARDUINO_VOLTAGE_PIN = A2;
+const uint8_t GSM_VOLTAGE_PIN = A3;
+//const int SOLAR_VOLTMETER_R1 = 19400;
+//const int SOLAR_VOLTMETER_R2 = 6740;
+const int BATTERY_VOLTMETER_R1 = 19400;
+const int BATTERY_VOLTMETER_R2 = 6740;
+const int ARDUINO_VOLTMETER_R1 = 19400;
+const int ARDUINO_VOLTMETER_R2 = 6740;
+const int GSM_VOLTMETER_R1 = 19400;
+const int GSM_VOLTMETER_R2 = 6740;
 
 // BUTTONS
-const uint8_t INTERRUPT_BUTTON_PIN = 2;
+const uint8_t DEBUG_BUTTON_PIN = 2;
 
 // DEBUG LED
 const uint8_t RED_LED_PIN = 3;
