@@ -12,7 +12,7 @@ public:
     bool connect();
     
     Weather getWeather();
-    PowerLevels getPowerLevels();
+    PowerLevels getPowerLevels(bool useOnlyBuiltinSensors = false);
 
 private:
     bool _isConnected;

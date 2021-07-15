@@ -21,13 +21,16 @@ Weather Sensors::getWeather(){
     return data;
 }
 
-PowerLevels Sensors::getPowerLevels(){
+PowerLevels Sensors::getPowerLevels(bool useOnlyBuiltinSensors){
     PowerLevels data;
-    data.solarCurrent = _ina219->getCurrent_mA();
-    data.solarVoltage = _ina219->getBusVoltage_V() + (_ina219->getShuntVoltage_mV() / 1000);
     data.arduinoVoltage = getVoltageFromAnalogPin(ARDUINO_VOLTAGE_PIN, ARDUINO_VOLTMETER_R1, ARDUINO_VOLTMETER_R2);
     data.batteryVoltage = getVoltageFromAnalogPin(BATTERY_VOLTAGE_PIN, BATTERY_VOLTMETER_R1, BATTERY_VOLTMETER_R2);
     data.gsmVoltage = getVoltageFromAnalogPin(GSM_VOLTAGE_PIN, GSM_VOLTMETER_R1, GSM_VOLTMETER_R2);
+    
+    if(!useOnlyBuiltinSensors){
+        data.solarCurrent = _ina219->getCurrent_mA();
+        data.solarVoltage = _ina219->getBusVoltage_V() + (_ina219->getShuntVoltage_mV() / 1000);
+    }
 
     return data;
 }

@@ -27,6 +27,8 @@ bool WebClient::getUpdates(GetData* data){
     data->getDataFrequency = readIntJsonField(&response, "gdf:");
     data->safeModeVoltage = readFloatJsonField(&response, "smv:");
     data->economyModeVoltage = readFloatJsonField(&response, "emv:");
+    data->economyModeDataSendSkipMultiplier = readIntJsonField(&response, "emm:");
+    data->solarVoltageForLightTime = readFloatJsonField(&response, "svl:");    
     data->smsInformNumber = readStringJsonField(&response, "sms:");
 
     _gsm->disconnect();
@@ -49,8 +51,7 @@ bool WebClient::postData(PostData data){
                 "bv:" + String(data.batteryVoltage) +
                 "av:" + String(data.arduinoVoltage) +
                 "gv:" + String(data.gsmVoltage) +
-                "is:" + String(data.isSafeMode) +
-                "ie:" + String(data.isEconomyMode) +
+                "pm:" + String(data.powerMode) +
                 "rc:" + String(data.restartsCount) +
                 "ge:" + String(data.gsmErrors) +
             +"}";

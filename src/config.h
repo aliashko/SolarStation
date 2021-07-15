@@ -31,12 +31,12 @@ const uint8_t ARDUINO_VOLTAGE_PIN = A2;
 const uint8_t GSM_VOLTAGE_PIN = A3;
 //const int SOLAR_VOLTMETER_R1 = 19400;
 //const int SOLAR_VOLTMETER_R2 = 6740;
-const int BATTERY_VOLTMETER_R1 = 19400;
-const int BATTERY_VOLTMETER_R2 = 6740;
-const int ARDUINO_VOLTMETER_R1 = 19400;
-const int ARDUINO_VOLTMETER_R2 = 6740;
-const int GSM_VOLTMETER_R1 = 19400;
-const int GSM_VOLTMETER_R2 = 6740;
+const unsigned int BATTERY_VOLTMETER_R1 = 19400;
+const unsigned int BATTERY_VOLTMETER_R2 = 6740;
+const unsigned int ARDUINO_VOLTMETER_R1 = 19400;
+const unsigned int ARDUINO_VOLTMETER_R2 = 6740;
+const unsigned int GSM_VOLTMETER_R1 = 19400;
+const unsigned int GSM_VOLTMETER_R2 = 6740;
 
 // BUTTONS
 const uint8_t DEBUG_BUTTON_PIN = 2;
@@ -45,6 +45,7 @@ const uint8_t DEBUG_BUTTON_PIN = 2;
 const uint8_t RED_LED_PIN = 3;
 const uint8_t GREEN_LED_PIN = 4;
 const uint8_t BLUE_LED_PIN = 5;
+const uint8_t YELLOW_LED_PIN = 8;
 
 struct BackendClientConfig {
     const char* Host = "http://solarstation.liashko.space";

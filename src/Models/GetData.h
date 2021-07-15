@@ -8,6 +8,8 @@ struct GetData {
 
     float safeModeVoltage;
     float economyModeVoltage;
+    unsigned int economyModeDataSendSkipMultiplier;
+    float solarVoltageForLightTime;
 
     String smsInformNumber;
 };

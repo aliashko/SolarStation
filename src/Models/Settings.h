@@ -9,6 +9,8 @@ struct Settings {
 
   float safeModeVoltage;
   float economyModeVoltage;
+  unsigned int economyModeDataSendSkipMultiplier;
+  float solarVoltageForLightTime;
 
   String smsInformNumber;
 
@@ -25,6 +27,8 @@ const Settings DEFAULT_SETTINGS = {
 
   .safeModeVoltage = 3.5,
   .economyModeVoltage = 4.0,
+  .economyModeDataSendSkipMultiplier = 10,
+  .solarVoltageForLightTime = 4.0,
 
   .smsInformNumber = "",
 

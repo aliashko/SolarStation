@@ -5,14 +5,6 @@
 #include "WebClient.h"
 #include "Models/SystemState.h"
 
-enum class RuntimeMode {
-    Idle,
-    Initializating,
-    Measuring,
-    SendingData,
-    GettingUpdates
-};
-
 class LifecycleManager
 {
 public:
@@ -20,6 +12,7 @@ public:
     void iterate();
 
     void initialize();
+    void measureForSafeMode();
     void measure();
     void sendData();
     void getUpdates();
@@ -27,7 +20,6 @@ public:
 private:
     Settings _settings;
     SystemState _systemState;
-    RuntimeMode _runtimeMode = RuntimeMode::Initializating;
 
     PowerManager* _powerManager;
     Storage* _storage;
@@ -38,4 +30,7 @@ private:
     unsigned int _getDataIterationCounter = 0;
     Weather _currentWeather;
     PowerLevels _currentPowerLevels;
+
+    void updateSystemState();
+    void sleep();
 };

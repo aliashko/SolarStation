@@ -12,9 +12,8 @@ struct PostData {
     float batteryVoltage;
     float arduinoVoltage;
     float gsmVoltage;
+    uint8_t powerMode;
 
-    bool isSafeMode;
-    bool isEconomyMode;
     unsigned long restartsCount;
     unsigned int gsmErrors;
 };

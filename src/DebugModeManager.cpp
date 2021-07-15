@@ -7,6 +7,7 @@ void DebugModeManager::initializeHardware(){
     pinMode(RED_LED_PIN, OUTPUT);
     pinMode(GREEN_LED_PIN, OUTPUT);
     pinMode(BLUE_LED_PIN, OUTPUT);
+    pinMode(YELLOW_LED_PIN, OUTPUT);
 }
 
 bool DebugModeManager::checkIfDebugModeRequested(){
@@ -27,4 +28,8 @@ void DebugModeManager::greenLedMode(bool turnOn){
 
 void DebugModeManager::blueLedMode(bool turnOn){
     digitalWrite(BLUE_LED_PIN, turnOn);
+}
+
+void DebugModeManager::yellowLedMode(bool turnOn){
+    digitalWrite(YELLOW_LED_PIN, turnOn);
 }
