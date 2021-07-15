@@ -40,7 +40,7 @@ bool GsmClient::connect(){
 	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(modemInfo);
 
 	// Unlock your SIM card with a PIN if needed
-	if (_simPin != "" && _modem->getSimStatus() != 3) { _modem->simUnlock(_simPin); }
+	if ((_simPin != NULL) && (_simPin[0] != '\0') && _modem->getSimStatus() != 3) { _modem->simUnlock(_simPin); }
 
 	if(GSM_DEBUG) GSM_SERIAL_MONITOR.print("Waiting for network...");
 	if (!_modem->waitForNetwork()) {
@@ -134,4 +134,6 @@ bool GsmClient::sendRequest(String verb, String host, String resource, String bo
 
 	http.stop();
 	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(F("Server disconnected"));
+
+	return true;
 }

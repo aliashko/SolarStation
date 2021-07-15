@@ -33,3 +33,9 @@ void DebugModeManager::blueLedMode(bool turnOn){
 void DebugModeManager::yellowLedMode(bool turnOn){
     digitalWrite(YELLOW_LED_PIN, turnOn);
 }
+
+void DebugModeManager::blinkAllLeds(){
+    redLedMode(true);greenLedMode(true);blueLedMode(true);yellowLedMode(true);
+    delay(1000);
+    redLedMode(false);greenLedMode(false);blueLedMode(false);yellowLedMode(false);
+}

@@ -2,8 +2,8 @@
 #include <Models/Weather.h>
 #include <Models/PowerLevels.h>
 #include <Wire.h>
-#include "DHT.h"
-#include <Adafruit_INA219.h>
+#include "SimpleDHT.h"
+#include <INA219_WE.h>
 
 class Sensors
 {
@@ -17,8 +17,8 @@ public:
 private:
     bool _isConnected;
 
-    DHT* _dht;
-    Adafruit_INA219* _ina219;
+    SimpleDHT22* _dht;
+    INA219_WE* _ina219;
 
     float getVoltageFromAnalogPin(uint8_t pin, int r1, int r2);
 };

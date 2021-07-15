@@ -2,21 +2,22 @@
 #include "config.h"
 
 Sensors::Sensors(){
-    _dht = new DHT(DHT22_PIN, DHT22);
-    _ina219 = new Adafruit_INA219(INA_I2C_ADDRESS);
+    _dht = new SimpleDHT22(DHT22_PIN);
+    _ina219 = new INA219_WE(INA_I2C_ADDRESS);
 }
 
 bool Sensors::connect(){
-    _dht->begin();
-    _isConnected = _ina219->begin();
+    Wire.begin();
+    _isConnected = _ina219->init();
+    _ina219->setMeasureMode(TRIGGERED);
 
     return _isConnected;
 }
 
 Weather Sensors::getWeather(){
     Weather data;
-    data.temperature = _dht->readTemperature();
-    data.humidity = _dht->readHumidity();
+
+    if (_dht->read2(&data.temperature, &data.humidity, NULL) != SimpleDHTErrSuccess);
 
     return data;
 }

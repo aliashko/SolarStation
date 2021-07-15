@@ -67,13 +67,13 @@ bool WebClient::postData(PostData data){
 
 int WebClient::readIntJsonField(String* str, String field){
     auto strValue = readStringJsonField(str, field);
-    if(strValue == "") return -1;
+    if(strValue.length() == 0) return -1;
     return strValue.toInt();
 }
 
 float WebClient::readFloatJsonField(String* str, String field){
     auto strValue = readStringJsonField(str, field);
-    if(strValue == "") return -1;
+    if(strValue.length() == 0) return -1;
     return strValue.toFloat();
 }
 

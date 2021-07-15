@@ -16,10 +16,10 @@ void LifecycleManager::iterate() {
     _getDataIterationCounter++;  
 
     if(_systemState.powerMode == PowerMode::Safe){
-        measureForSafeMode();
+       measureForSafeMode();
     }
     else {
-        measure();
+       measure();
     }
 
     updateSystemState();
@@ -52,7 +52,8 @@ void LifecycleManager::initialize(){
         .gsmErrors = 0,
     };
 
-    _storage->incrementRestartsCount();
+    if(_systemState.isDebugMode)DebugModeManager::blinkAllLeds();
+    else _storage->incrementRestartsCount();
 }
 
 void LifecycleManager::measure(){
