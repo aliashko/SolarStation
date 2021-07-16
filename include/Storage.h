@@ -1,6 +1,8 @@
 #pragma once
-#include <EEPROM.h>
+#include <avr/eeprom.h>
 #include <Models/Settings.h>
+
+#define RESTARTS_COUNT_OFFSET 1000
 
 class Storage
 {
@@ -9,9 +11,6 @@ public:
     Settings getSettings();
     void updateSettings(Settings settings);
 
-    unsigned long getRestartsCount();
+    unsigned long getRestartsCount(unsigned long integrityControlKey = SETTINGS_INTEGRITY_CONTROL_KEY_VALUE);
     void incrementRestartsCount();
-
-private:
-    const uint16_t _restartsCountOffset = 1000;
 };

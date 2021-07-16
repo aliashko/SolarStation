@@ -3,6 +3,7 @@
 
 const unsigned int SENSORS_WARMUP_DELAY_MS = 1000;
 const unsigned int GSM_WARMUP_DELAY_MS = 1000;
+const unsigned int GSM_INITIALIZATION_DELAY_MS = 6000;
 
 // POWER (MOSFET CONTROLLING)
 const uint8_t SENSORS_POWER_CONTROL_PIN = 0;
@@ -17,8 +18,9 @@ const uint8_t INA_I2C_ADDRESS = 0x40; //5V
 // GSM (SIM800L) MODULE - 3.7-4.2V VCC
 const uint8_t SIM800_TX = 6; //3.3V
 const uint8_t SIM800_RX = 7; //3.3V
+
+//#define SIM_PIN "0000"
 struct GsmConfiguration {
-    const char* SimPin = "";
     const char* Apn = "internet";
     const char* GprsUser = "";
     const char* GprsPassword = "";

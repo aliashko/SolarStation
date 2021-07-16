@@ -13,7 +13,9 @@ public:
 private:
     GsmClient* _gsm;
 
-    int readIntJsonField(String* str, String field);
-    float readFloatJsonField(String* str, String field);
-    String readStringJsonField(String* str, String field);
+    int readIntJsonField(String* str, const char* field);
+    float readFloatJsonField(String* str, const char* field);
+    const char* readStringJsonField(String* str, const char* field);
+
+    void jsonConcat(char* json, const char* key, char* value);
 };

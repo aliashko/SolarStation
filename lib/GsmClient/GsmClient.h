@@ -5,9 +5,11 @@
 #include <ArduinoHttpClient.h>
 
 // Set serial for debug console (to the Serial Monitor)
-#define GSM_DEBUG true
-#define GSM_SERIAL_MONITOR Serial
-#define TINY_GSM_DEBUG SerialMonitor
+//#define GSM_DEBUG
+#ifdef GSM_DEBUG
+    #define GSM_SERIAL_MONITOR Serial
+    #define TINY_GSM_DEBUG SerialMonitor
+#endif
 
 class GsmClient
 {
@@ -17,15 +19,14 @@ public:
         uint8_t txPin, 
         const char* apn,
         const char* gprsUser, 
-        const char* gprsPass, 
-        const char* simPin = "");
+        const char* gprsPass,
+        uint16_t initializationDelay = 6000);
 
     bool connect();
     void disconnect();
     void reset();
 
-    bool sendRequest(String verb, String host, String resource, String body, String* response, int* httpCode);
-
+    bool sendRequest(const char* verb, const char* host, const char* resource, char* body, String* response, int* httpCode);
 private:
     bool _isConnected = false;
 
@@ -35,7 +36,7 @@ private:
     const char* _apn;
     const char* _gprsUser;
     const char* _gprsPass;
-    const char* _simPin;
+    uint16_t _initializationDelay;
 
     TinyGsm* _modem;
     TinyGsmClient* _client;

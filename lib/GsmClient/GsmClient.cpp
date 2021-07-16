@@ -6,62 +6,81 @@ GsmClient::GsmClient(
 	uint8_t txPin, 
 	const char* apn,
 	const char* gprsUser, 
-	const char* gprsPass, 
-	const char* simPin){
+	const char* gprsPass,
+	uint16_t initializationDelay){
 		_rxPin = rxPin;
 		_txPin = txPin;
 		_apn = apn;
 		_gprsUser = gprsUser;
 		_gprsPass = gprsPass;
-		_simPin = simPin;
+		_initializationDelay = initializationDelay;
+
 		_serialAT = new SoftwareSerial(rxPin, txPin);
+		_modem = new TinyGsm(*_serialAT);
+		_client = new TinyGsmClient(*_modem);
 }
 
 bool GsmClient::connect(){
-	if(_modem != NULL) delete(_modem);
-	if(_client != NULL) delete(_client);
-	
-	_modem = new TinyGsm(*_serialAT);
-	_client = new TinyGsmClient(*_modem);
-
 	// Set GSM module baud rate
 	TinyGsmAutoBaud(*_serialAT, GSM_AUTOBAUD_MIN, GSM_AUTOBAUD_MAX);
 	// _serialAT.begin(9600);
-	delay(6000);
+	delay(_initializationDelay);
 
 	// Restart takes quite some time
 	// To skip it, call init() instead of restart()
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println("Initializing modem...");
+	#ifdef GSM_DEBUG 
+	GSM_SERIAL_MONITOR.println("Initializing modem...");
+	#endif
 	_modem->restart();
 	// _modem->init();
 
+	#ifdef GSM_DEBUG 
 	String modemInfo = _modem->getModemInfo();
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.print("Modem Info: ");
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(modemInfo);
-
+	GSM_SERIAL_MONITOR.print("Modem Info: ");
+	GSM_SERIAL_MONITOR.println(modemInfo);
+	#endif
 	// Unlock your SIM card with a PIN if needed
-	if ((_simPin != NULL) && (_simPin[0] != '\0') && _modem->getSimStatus() != 3) { _modem->simUnlock(_simPin); }
+	//if ((_simPin != NULL) && (_simPin[0] != '\0') && _modem->getSimStatus() != 3) { _modem->simUnlock(_simPin); }
 
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.print("Waiting for network...");
+	#ifdef GSM_DEBUG 
+	GSM_SERIAL_MONITOR.print("Waiting for network...");
+	#endif
 	if (!_modem->waitForNetwork()) {
-		if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(" fail");
+		#ifdef GSM_DEBUG 
+		GSM_SERIAL_MONITOR.println(" fail");
+		#endif
 		return false;
 	}
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(" success");
+	#ifdef GSM_DEBUG 
+	GSM_SERIAL_MONITOR.println(" success");
+	#endif
 
-	if (_modem->isNetworkConnected()) { if(GSM_DEBUG) GSM_SERIAL_MONITOR.println("Network connected"); }
-
+	#ifdef GSM_DEBUG  
+	if (_modem->isNetworkConnected()) { 		
+		GSM_SERIAL_MONITOR.println("Network connected"); 		
+	}
+	#endif
+	
 	// GPRS connection parameters are usually set after network registration
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.print(F("Connecting to "));
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.print(_apn);
+	#ifdef GSM_DEBUG 
+	GSM_SERIAL_MONITOR.print(F("Connecting to "));
+	GSM_SERIAL_MONITOR.print(_apn);
+	#endif
 	if (!_modem->gprsConnect(_apn, _gprsUser, _gprsPass)) {
-		if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(" fail");
+		#ifdef GSM_DEBUG 
+		GSM_SERIAL_MONITOR.println(" fail");
+		#endif
 		return false;
 	}
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(" success");
+
+	#ifdef GSM_DEBUG 
+	GSM_SERIAL_MONITOR.println(" success");
+	#endif
 
 	if (_modem->isGprsConnected()) { 
-		if(GSM_DEBUG) GSM_SERIAL_MONITOR.println("GPRS connected"); 
+		#ifdef GSM_DEBUG 
+		GSM_SERIAL_MONITOR.println("GPRS connected"); 
+		#endif
 		_isConnected = true;
 	}
 	else _isConnected = false;
@@ -72,7 +91,9 @@ bool GsmClient::connect(){
 void GsmClient::disconnect(){
 	_modem->gprsDisconnect();
 	//_modem->poweroff();
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(F("GPRS disconnected"));
+	#ifdef GSM_DEBUG 
+	GSM_SERIAL_MONITOR.println(F("GPRS disconnected"));
+	#endif
 	_isConnected = false;
 }
 
@@ -80,30 +101,27 @@ void GsmClient::reset(){
 	_modem->restart();
 }
 
-bool GsmClient::sendRequest(String verb, String host, String resource, String body, String* response, int* httpCode){
+bool GsmClient::sendRequest(const char* verb, const char* host, const char* resource, char* body, String* response, int* httpCode){
 	HttpClient http(*_client, host);
 
-	if(GSM_DEBUG) {
+	#ifdef GSM_DEBUG 
 		GSM_SERIAL_MONITOR.print(F("Performing HTTP "));
 		GSM_SERIAL_MONITOR.print(verb);
 		GSM_SERIAL_MONITOR.print(F(" request... "));
-	}
-	int err;
+	#endif
 	
-	if(verb == "GET"){
-		err = http.get(resource);
+	if(strcmp(verb, "POST") == 0){
+		http.post(resource, POST_CONTENT_TYPE, body);
 	}
-	else if(verb == "POST"){
-		err = http.post(resource, POST_CONTENT_TYPE, body);
-	}
-	if (err != 0) {
-		if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(F("failed to connect"));
-		return false;
+	else {
+		http.get(resource);
 	}
 
 	*httpCode = http.responseStatusCode();
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.print(F("Response status code: "));
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(*httpCode);
+	#ifdef GSM_DEBUG 
+	GSM_SERIAL_MONITOR.print(F("Response status code: "));
+	GSM_SERIAL_MONITOR.println(*httpCode);
+	#endif
 
 	/*
 	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(F("Response Headers:"));
@@ -114,26 +132,33 @@ bool GsmClient::sendRequest(String verb, String host, String resource, String bo
 	}
 	*/
 
+	#ifdef GSM_DEBUG
 	int length = http.contentLength();
-	if (length >= 0) {
-		if(GSM_DEBUG) GSM_SERIAL_MONITOR.print(F("Content length is: "));
-		if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(length);
+	if (length >= 0) {		
+		GSM_SERIAL_MONITOR.print(F("Content length is: "));
+		GSM_SERIAL_MONITOR.println(length);
+		
 	}
 	if (http.isResponseChunked()) {
-		if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(F("The response is chunked"));
+		GSM_SERIAL_MONITOR.println(F("The response is chunked"));
 	}
+	#endif
 
 	*response = http.responseBody();
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(F("Response:"));
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(*response);
 
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.print(F("Body length is: "));
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println((*response).length());
+	#ifdef GSM_DEBUG
+	GSM_SERIAL_MONITOR.println(F("Response:"));
+	GSM_SERIAL_MONITOR.println(*response);
+	GSM_SERIAL_MONITOR.print(F("Body length is: "));
+	GSM_SERIAL_MONITOR.println((*response).length());
+	#endif
 
 	// Shutdown
 
 	http.stop();
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(F("Server disconnected"));
+	#ifdef GSM_DEBUG
+	GSM_SERIAL_MONITOR.println(F("Server disconnected"));
+	#endif
 
 	return true;
 }

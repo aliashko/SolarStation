@@ -7,8 +7,8 @@ WebClient::WebClient(){
         SIM800_RX, SIM800_TX, 
         config.Apn, 
         config.GprsUser, 
-        config.GprsPassword, 
-        config.SimPin);
+        config.GprsPassword,
+        GSM_INITIALIZATION_DELAY_MS);
 }
 
 bool WebClient::getUpdates(GetData* data){
@@ -16,7 +16,7 @@ bool WebClient::getUpdates(GetData* data){
 
     BackendClientConfig config;
     String response; int httpCode;
-    if(!_gsm->sendRequest("GET", config.Host, config.GetUpdatesEndpoint, "", &response, &httpCode) || httpCode != 200) {
+    if(!_gsm->sendRequest("GET", config.Host, config.GetUpdatesEndpoint, NULL, &response, &httpCode) || httpCode != 200) {
         _gsm->disconnect();
         return false;
     }
@@ -39,22 +39,25 @@ bool WebClient::postData(PostData data){
     if(!_gsm->connect())return false;
 
     BackendClientConfig config;
-    String request, response; int httpCode;
+    String response; int httpCode;
 
-    request = String("{")+
-                "ts:" + String(data.timestamp) +
-                "t:" + String(data.temperature) +
-                "h:" + String(data.humidity) +
-                "r:" + String(data.raindropLevel) +
-                "sv:" + String(data.solarVoltage) +
-                "sc:" + String(data.solarCurrent) +
-                "bv:" + String(data.batteryVoltage) +
-                "av:" + String(data.arduinoVoltage) +
-                "gv:" + String(data.gsmVoltage) +
-                "pm:" + String(data.powerMode) +
-                "rc:" + String(data.restartsCount) +
-                "ge:" + String(data.gsmErrors) +
-            +"}";
+    char request[200];char* buf;
+    request[0] = '\0';
+
+    strcat(request,"{");
+    ultoa(data.timestamp,buf,15);jsonConcat(request, "ts", buf);
+    itoa((int)(data.temperature*10),buf,10);jsonConcat(request, "t", buf);
+    itoa((int)(data.humidity*10),buf,10);jsonConcat(request, "h", buf);
+    utoa(data.raindropLevel,buf,10);jsonConcat(request, "r", buf);
+    itoa((int)(data.solarVoltage*10),buf,10);jsonConcat(request, "sv", buf);
+    itoa((int)(data.solarCurrent*10),buf,10);jsonConcat(request, "sc", buf);
+    itoa((int)(data.batteryVoltage*10),buf,10);jsonConcat(request, "bv", buf);
+    itoa((int)(data.arduinoVoltage*10),buf,10);jsonConcat(request, "av", buf);
+    itoa((int)(data.gsmVoltage*10),buf,10);jsonConcat(request, "gv", buf);
+    utoa(data.powerMode,buf,10);jsonConcat(request, "pm", buf);
+    ultoa(data.restartsCount,buf,10);jsonConcat(request, "rc", buf);
+    utoa(data.gsmErrors,buf,10);jsonConcat(request, "ge", buf);
+    strcat(request,"}");
 
     if(!_gsm->sendRequest("POST", config.Host, config.PostDataEndpoint, request, &response, &httpCode) || httpCode != 200) {
         _gsm->disconnect();
@@ -65,25 +68,33 @@ bool WebClient::postData(PostData data){
     return true;
 }
 
-int WebClient::readIntJsonField(String* str, String field){
+int WebClient::readIntJsonField(String* str, const char* field){
     auto strValue = readStringJsonField(str, field);
-    if(strValue.length() == 0) return -1;
-    return strValue.toInt();
+    if(strlen(strValue) == 0) return -1;
+
+    return atoi(strValue);
 }
 
-float WebClient::readFloatJsonField(String* str, String field){
-    auto strValue = readStringJsonField(str, field);
-    if(strValue.length() == 0) return -1;
-    return strValue.toFloat();
+float WebClient::readFloatJsonField(String* str, const char* field){
+    auto intValue = readIntJsonField(str, field);
+    if(intValue == -1) return -1;
+    return (float)intValue/10.0;
 }
 
-String WebClient::readStringJsonField(String* str, String field){
+const char* WebClient::readStringJsonField(String* str, const char* field){
     int i = str->indexOf(field);
     if(i == -1) return "";
     int iend = str->indexOf(",", i);
     if(iend == -1)iend = str->indexOf("}", i);
     if(iend == -1) return "";
-    if(iend <= i + (int)field.length()) return "";
+    if(iend <= (int)(i + strlen(field))) return "";
 
-    return str->substring(i + field.length(), iend);
+    return (str->substring(i + strlen(field), iend)).c_str();
+}
+
+void WebClient::jsonConcat(char* json, const char* key, char* value){
+    strcat(json, key);
+    strcat(json,":");
+    strcat(json, value);
+    strcat(json,",");
 }

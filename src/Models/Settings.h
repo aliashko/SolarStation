@@ -12,7 +12,7 @@ struct Settings {
   unsigned int economyModeDataSendSkipMultiplier;
   float solarVoltageForLightTime;
 
-  String smsInformNumber;
+  const char* smsInformNumber;
 
   unsigned long _integrityControlKey;
 };

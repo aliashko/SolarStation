@@ -48,7 +48,7 @@ void LifecycleManager::initialize(){
         .timestamp = 0,
         .isDebugMode = DebugModeManager::checkIfDebugModeRequested(),
         .powerMode = PowerMode::Unknown,
-        .restartsCount = _storage->getRestartsCount(),
+        .restartsCount = _storage->getRestartsCount(_settings._integrityControlKey),
         .gsmErrors = 0,
     };
 
