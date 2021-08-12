@@ -10,7 +10,8 @@ PowerManager::PowerManager(){
 }
 
 void PowerManager::deepSleep(int seconds){
-    power.sleepDelay(1000 * seconds);
+    //power.sleepDelay(1000 * seconds);
+    delay(1000 * seconds);
 }
 
 void PowerManager::wakeUp(){

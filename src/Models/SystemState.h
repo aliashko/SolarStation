@@ -1,6 +1,6 @@
 #pragma once
 
-enum class PowerMode {
+enum class SystemPowerMode {
     Unknown,
     Powerfull,
     Economy,
@@ -10,7 +10,7 @@ enum class PowerMode {
 struct SystemState {
     unsigned long timestamp;
     bool isDebugMode;
-    PowerMode powerMode;
+    SystemPowerMode powerMode;
 
     unsigned long restartsCount;
     unsigned int gsmErrors;

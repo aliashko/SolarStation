@@ -4,161 +4,229 @@
 GsmClient::GsmClient(
 	uint8_t rxPin, 
 	uint8_t txPin, 
+	uint8_t resetPin, 
 	const char* apn,
-	const char* gprsUser, 
-	const char* gprsPass,
-	uint16_t initializationDelay){
+	uint16_t initializationDelay,
+	uint16_t operationsDelay,
+	uint16_t httpResponseBuffer){
 		_rxPin = rxPin;
 		_txPin = txPin;
+		_resetPin = resetPin;
 		_apn = apn;
-		_gprsUser = gprsUser;
-		_gprsPass = gprsPass;
 		_initializationDelay = initializationDelay;
+		_operationsDelay = operationsDelay;
+		_httpResponseBuffer = httpResponseBuffer;
 
-		_serialAT = new SoftwareSerial(rxPin, txPin);
-		_modem = new TinyGsm(*_serialAT);
-		_client = new TinyGsmClient(*_modem);
+		_simSerial = new SoftwareSerial(rxPin, txPin);
+		_simSerial->begin(9600);
+		#ifndef SIM800L_INTERNAL_DEBUG 
+		_sim800 = new SIM800L((Stream *)_simSerial, _resetPin, 200, _httpResponseBuffer);
+		#else
+		_sim800 = new SIM800L((Stream *)_simSerial, _resetPin, 200, _httpResponseBuffer, (Stream *)&Serial);
+		#endif
 }
 
 bool GsmClient::connect(){
-	// Set GSM module baud rate
-	TinyGsmAutoBaud(*_serialAT, GSM_AUTOBAUD_MIN, GSM_AUTOBAUD_MAX);
-	// _serialAT.begin(9600);
-	delay(_initializationDelay);
-
-	// Restart takes quite some time
-	// To skip it, call init() instead of restart()
 	#ifdef GSM_DEBUG 
+	GSM_SERIAL_MONITOR.begin(9600);
 	GSM_SERIAL_MONITOR.println("Initializing modem...");
 	#endif
-	_modem->restart();
-	// _modem->init();
+	//reset();
+	delay(_initializationDelay);
 
-	#ifdef GSM_DEBUG 
-	String modemInfo = _modem->getModemInfo();
-	GSM_SERIAL_MONITOR.print("Modem Info: ");
-	GSM_SERIAL_MONITOR.println(modemInfo);
-	#endif
-	// Unlock your SIM card with a PIN if needed
-	//if ((_simPin != NULL) && (_simPin[0] != '\0') && _modem->getSimStatus() != 3) { _modem->simUnlock(_simPin); }
-
-	#ifdef GSM_DEBUG 
-	GSM_SERIAL_MONITOR.print("Waiting for network...");
-	#endif
-	if (!_modem->waitForNetwork()) {
+	// Wait until the module is ready to accept AT commands
+	while(!_sim800->isReady()) {
 		#ifdef GSM_DEBUG 
-		GSM_SERIAL_MONITOR.println(" fail");
+		Serial.println(F("Problem to initialize AT command, retry in 1 sec"));
 		#endif
-		return false;
+		delay(_operationsDelay);
 	}
 	#ifdef GSM_DEBUG 
-	GSM_SERIAL_MONITOR.println(" success");
+	Serial.println(F("Setup Complete!"));
 	#endif
 
-	#ifdef GSM_DEBUG  
-	if (_modem->isNetworkConnected()) { 		
-		GSM_SERIAL_MONITOR.println("Network connected"); 		
+	// Wait for the GSM signal
+	currentSignalLevel = _sim800->getSignal();
+	while(currentSignalLevel <= 0) {
+		delay(_operationsDelay);
+		currentSignalLevel = _sim800->getSignal();
 	}
-	#endif
-	
-	// GPRS connection parameters are usually set after network registration
 	#ifdef GSM_DEBUG 
-	GSM_SERIAL_MONITOR.print(F("Connecting to "));
-	GSM_SERIAL_MONITOR.print(_apn);
+	Serial.print(F("Signal OK (strenght: "));
+	Serial.print(currentSignalLevel);
+	Serial.println(F(")"));
 	#endif
-	if (!_modem->gprsConnect(_apn, _gprsUser, _gprsPass)) {
-		#ifdef GSM_DEBUG 
-		GSM_SERIAL_MONITOR.println(" fail");
-		#endif
-		return false;
-	}
+	delay(_operationsDelay);
 
+	// Wait for operator network registration (national or roaming network)
+	NetworkRegistration network = _sim800->getRegistrationStatus();
+	while(network != REGISTERED_HOME && network != REGISTERED_ROAMING) {
+		delay(_operationsDelay);
+		network = _sim800->getRegistrationStatus();
+	}
 	#ifdef GSM_DEBUG 
-	GSM_SERIAL_MONITOR.println(" success");
+	Serial.println(F("Network registration OK"));
+	delay(_operationsDelay);
 	#endif
 
-	if (_modem->isGprsConnected()) { 
-		#ifdef GSM_DEBUG 
-		GSM_SERIAL_MONITOR.println("GPRS connected"); 
-		#endif
-		_isConnected = true;
+	// Setup APN for GPRS configuration
+	bool success = _sim800->setupGPRS(_apn);
+	while(!success){
+		success = _sim800->setupGPRS(_apn);
+		delay(_operationsDelay);
 	}
-	else _isConnected = false;
+	#ifdef GSM_DEBUG 
+	Serial.println(F("GPRS config OK"));
+	#endif
 
+	_isConnected = success;
 	return _isConnected;
 }
 
 void GsmClient::disconnect(){
-	_modem->gprsDisconnect();
-	//_modem->poweroff();
+	// Close GPRS connectivity (5 trials)
+	bool disconnected = _sim800->disconnectGPRS();
+	for(uint8_t i = 0; i < 5 && !disconnected; i++) {
+		disconnected = _sim800->disconnectGPRS();
+		delay(_operationsDelay);		
+	}
+	
 	#ifdef GSM_DEBUG 
-	GSM_SERIAL_MONITOR.println(F("GPRS disconnected"));
+	if(disconnected) {
+		Serial.println(F("GPRS disconnected !"));
+	} else {
+		Serial.println(F("GPRS still connected !"));
+	}
 	#endif
-	_isConnected = false;
+/*
+	// Go into low power mode
+	bool lowPowerMode = _sim800->setPowerMode(MINIMUM);
+	#ifdef GSM_DEBUG 
+	if(lowPowerMode) {
+		Serial.println(F("Module in low power mode"));
+	} else {
+		Serial.println(F("Failed to switch module to low power mode"));
+	}
+	#endif
+*/
+	_isConnected = !disconnected;
 }
 
 void GsmClient::reset(){
-	_modem->restart();
+	_sim800->reset();
 }
 
-bool GsmClient::sendRequest(const char* verb, const char* host, const char* resource, char* body, String* response, int* httpCode){
-	HttpClient http(*_client, host);
+bool GsmClient::sendRequest(const char* verb, const char* url, char* body, int timeout, char* response, int* httpCode){
+	// Establish GPRS connectivity (5 trials)
+	bool connected = false;
+	for(uint8_t i = 0; i < 5 && !connected; i++) {
+		connected = _sim800->connectGPRS();
+		delay(_operationsDelay);
+	}
+	delay(_operationsDelay);
+
+	// Check if connected, if not reset the module and setup the config again
+	if(connected) {
+		#ifdef GSM_DEBUG 
+		Serial.println(F("GPRS connected"));
+		#endif
+	} else {
+		#ifdef GSM_DEBUG 
+		Serial.println(F("GPRS not connected !"));
+		Serial.println(F("Reset the module."));
+		#endif
+		return false;
+	}
 
 	#ifdef GSM_DEBUG 
-		GSM_SERIAL_MONITOR.print(F("Performing HTTP "));
-		GSM_SERIAL_MONITOR.print(verb);
-		GSM_SERIAL_MONITOR.print(F(" request... "));
-	#endif
-	
-	if(strcmp(verb, "POST") == 0){
-		http.post(resource, POST_CONTENT_TYPE, body);
-	}
-	else {
-		http.get(resource);
-	}
-
-	*httpCode = http.responseStatusCode();
-	#ifdef GSM_DEBUG 
-	GSM_SERIAL_MONITOR.print(F("Response status code: "));
-	GSM_SERIAL_MONITOR.println(*httpCode);
+	Serial.print(F("Start HTTP "));
+	Serial.println(verb);
+	Serial.println(url);
+	Serial.println(body);
 	#endif
 
-	/*
-	if(GSM_DEBUG) GSM_SERIAL_MONITOR.println(F("Response Headers:"));
-	while (http.headerAvailable()) {
-		String headerName  = http.readHeaderName();
-		String headerValue = http.readHeaderValue();
-		if(GSM_DEBUG) GSM_SERIAL_MONITOR.println("    " + headerName + " : " + headerValue);
-	}
-	*/
+	// Do HTTP communication
+	if(strcmp(verb, "GET") == 0)*httpCode = _sim800->doGet(url, timeout);
+	else *httpCode = _sim800->doPost(url, POST_CONTENT_TYPE, body, timeout, timeout);
 
-	#ifdef GSM_DEBUG
-	int length = http.contentLength();
-	if (length >= 0) {		
-		GSM_SERIAL_MONITOR.print(F("Content length is: "));
-		GSM_SERIAL_MONITOR.println(length);
-		
-	}
-	if (http.isResponseChunked()) {
-		GSM_SERIAL_MONITOR.println(F("The response is chunked"));
-	}
-	#endif
-
-	*response = http.responseBody();
-
-	#ifdef GSM_DEBUG
-	GSM_SERIAL_MONITOR.println(F("Response:"));
-	GSM_SERIAL_MONITOR.println(*response);
-	GSM_SERIAL_MONITOR.print(F("Body length is: "));
-	GSM_SERIAL_MONITOR.println((*response).length());
-	#endif
-
-	// Shutdown
-
-	http.stop();
-	#ifdef GSM_DEBUG
-	GSM_SERIAL_MONITOR.println(F("Server disconnected"));
-	#endif
-
+	if(*httpCode == 200) {
+		// Success
+		#ifdef GSM_DEBUG 
+		Serial.print(F("HTTP successful ("));
+		Serial.print(_sim800->getDataSizeReceived());
+		Serial.println(F(" bytes)"));
+		#endif
+		strcpy(response, _sim800->getDataReceived());
+		#ifdef GSM_DEBUG 
+		Serial.print(F("Received : "));
+		Serial.println(response);
+		#endif
+	} else {
+		// Failed...
+		#ifdef GSM_DEBUG 
+		Serial.print(F("HTTP error "));
+		Serial.println(*httpCode);
+		#endif
+		return false;
+	}	
 	return true;
 }
+/*
+
+bool GsmClient::sendRequest2(const char* verb, const char* url, char* body, int timeout){
+	// Establish GPRS connectivity (5 trials)
+	bool connected = false;
+	for(uint8_t i = 0; i < 5 && !connected; i++) {
+		connected = _sim800->connectGPRS();
+		delay(_operationsDelay);
+	}
+	delay(_operationsDelay);
+
+	// Check if connected, if not reset the module and setup the config again
+	if(connected) {
+		#ifdef GSM_DEBUG 
+		Serial.println(F("GPRS connected"));
+		#endif
+	} else {
+		#ifdef GSM_DEBUG 
+		Serial.println(F("GPRS not connected !"));
+		Serial.println(F("Reset the module."));
+		#endif
+		return false;
+	}
+
+	#ifdef GSM_DEBUG 
+	Serial.print(F("Start HTTP "));
+	Serial.println(verb);
+	Serial.println(url);
+	Serial.println(body);
+	#endif
+
+	// Do HTTP communication
+	int httpCode;char response[_httpResponseBuffer];
+	if(strcmp(verb, "GET") == 0)httpCode = _sim800->doGet(url, timeout);
+	else httpCode = _sim800->doPost(url, POST_CONTENT_TYPE, body, timeout, timeout);
+
+	if(httpCode == 200) {
+		// Success
+		#ifdef GSM_DEBUG 
+		Serial.print(F("HTTP successful ("));
+		Serial.print(_sim800->getDataSizeReceived());
+		Serial.println(F(" bytes)"));
+		#endif
+		strcpy(response, _sim800->getDataReceived());
+		//response = _sim800->getDataReceived();		
+		#ifdef GSM_DEBUG 
+		Serial.print(F("Received : "));
+		Serial.println(response);
+		#endif
+	} else {
+		// Failed...
+		#ifdef GSM_DEBUG 
+		Serial.print(F("HTTP error "));
+		Serial.println(httpCode);
+		#endif
+		return false;
+	}	
+	return true;
+}*/

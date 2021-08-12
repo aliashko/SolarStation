@@ -15,7 +15,7 @@ void LifecycleManager::iterate() {
     _sendDataIterationCounter++;
     _getDataIterationCounter++;  
 
-    if(_systemState.powerMode == PowerMode::Safe){
+    if(_systemState.powerMode == SystemPowerMode::Safe){
        measureForSafeMode();
     }
     else {
@@ -24,19 +24,19 @@ void LifecycleManager::iterate() {
 
     updateSystemState();
 
-    if(_systemState.powerMode != PowerMode::Safe){
+    if(_systemState.powerMode != SystemPowerMode::Safe){
         if(_sendDataIterationCounter >= 
-            _settings.sendDataFrequency * (_systemState.powerMode == PowerMode::Economy?_settings.economyModeDataSendSkipMultiplier:1)){
+            _settings.sendDataFrequency * (_systemState.powerMode == SystemPowerMode::Economy?_settings.economyModeDataSendSkipMultiplier:1)){
             sendData();
         }
 
-        if(_systemState.powerMode == PowerMode::Powerfull){
+        if(_systemState.powerMode == SystemPowerMode::Powerfull){
             if(_getDataIterationCounter >= _settings.getDataFrequency){
                 getUpdates();
             }
         }
     }
-
+    
     sleep();
 }
 
@@ -47,13 +47,13 @@ void LifecycleManager::initialize(){
     _systemState = SystemState{
         .timestamp = 0,
         .isDebugMode = DebugModeManager::checkIfDebugModeRequested(),
-        .powerMode = PowerMode::Unknown,
+        .powerMode = SystemPowerMode::Unknown,
         .restartsCount = _storage->getRestartsCount(_settings._integrityControlKey),
         .gsmErrors = 0,
     };
 
     if(_systemState.isDebugMode)DebugModeManager::blinkAllLeds();
-    else _storage->incrementRestartsCount();
+    else _storage->updateRestartsCount(_systemState.restartsCount + 1);
 }
 
 void LifecycleManager::measure(){
@@ -84,6 +84,8 @@ void LifecycleManager::sendData(){
         .temperature = _currentWeather.temperature,
         .humidity = _currentWeather.humidity,
         .raindropLevel = _currentWeather.raindropLevel,
+
+        .gsmSignalLevel = 0,
 
         .solarVoltage = _currentPowerLevels.solarVoltage,
         .solarCurrent = _currentPowerLevels.solarCurrent,
@@ -125,22 +127,22 @@ void LifecycleManager::getUpdates(){
 void LifecycleManager::updateSystemState(){    
     _systemState.timestamp = millis() / 1000;
 
-    if(_currentPowerLevels.batteryVoltage == 0)_systemState.powerMode = PowerMode::Unknown;
-    else if(_currentPowerLevels.batteryVoltage <= _settings.safeModeVoltage)_systemState.powerMode = PowerMode::Safe;
-    else if(_currentPowerLevels.batteryVoltage <= _settings.economyModeVoltage)_systemState.powerMode = PowerMode::Economy;
-    else _systemState.powerMode = PowerMode::Powerfull;
+    if(_currentPowerLevels.batteryVoltage == 0)_systemState.powerMode = SystemPowerMode::Unknown;
+    else if(_currentPowerLevels.batteryVoltage <= _settings.safeModeVoltage)_systemState.powerMode = SystemPowerMode::Safe;
+    else if(_currentPowerLevels.batteryVoltage <= _settings.economyModeVoltage)_systemState.powerMode = SystemPowerMode::Economy;
+    else _systemState.powerMode = SystemPowerMode::Powerfull;
 
     if(_systemState.isDebugMode){
         DebugModeManager::redLedMode(false);DebugModeManager::yellowLedMode(false);
-        if(_systemState.powerMode == PowerMode::Safe)DebugModeManager::redLedMode(true);
-        else if(_systemState.powerMode == PowerMode::Economy)DebugModeManager::yellowLedMode(true);
-        else if(_systemState.powerMode == PowerMode::Unknown){DebugModeManager::yellowLedMode(true);DebugModeManager::redLedMode(true);}
+        if(_systemState.powerMode == SystemPowerMode::Safe)DebugModeManager::redLedMode(true);
+        else if(_systemState.powerMode == SystemPowerMode::Economy)DebugModeManager::yellowLedMode(true);
+        else if(_systemState.powerMode == SystemPowerMode::Unknown){DebugModeManager::yellowLedMode(true);DebugModeManager::redLedMode(true);}
     }
 }
 
-void LifecycleManager::sleep(){    
+void LifecycleManager::sleep(){
     if(_currentPowerLevels.solarVoltage >= _settings.solarVoltageForLightTime)
-        _powerManager->deepSleep(_settings.lightTimeSleepDurationInMinutes * 60);
+        _powerManager->deepSleep(_settings.lightTimeSleepDurationInMinutes /** 60*/);
 
-    _powerManager->deepSleep(_settings.darkTimeSleepDurationInMinutes * 60);
+    _powerManager->deepSleep(_settings.darkTimeSleepDurationInMinutes /** 60*/);
 }

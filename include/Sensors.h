@@ -21,4 +21,5 @@ private:
     INA219_WE* _ina219;
 
     float getVoltageFromAnalogPin(uint8_t pin, int r1, int r2);
+    float getDataFromAnalogPin(uint8_t pin);
 };

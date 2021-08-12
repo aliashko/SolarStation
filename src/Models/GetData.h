@@ -11,5 +11,5 @@ struct GetData {
     unsigned int economyModeDataSendSkipMultiplier;
     float solarVoltageForLightTime;
 
-    const char* smsInformNumber;
+    unsigned long smsInformNumber;
 };

@@ -7,6 +7,8 @@ struct PostData {
     float humidity;
     unsigned int raindropLevel;
 
+    uint8_t gsmSignalLevel;
+
     float solarVoltage;
     float solarCurrent;
     float batteryVoltage;

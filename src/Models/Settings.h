@@ -12,12 +12,12 @@ struct Settings {
   unsigned int economyModeDataSendSkipMultiplier;
   float solarVoltageForLightTime;
 
-  const char* smsInformNumber;
+  unsigned long  smsInformNumber;
 
   unsigned long _integrityControlKey;
 };
 
-const unsigned long SETTINGS_INTEGRITY_CONTROL_KEY_VALUE = 12345678;
+const unsigned long SETTINGS_INTEGRITY_CONTROL_KEY_VALUE = 123456789;
 
 const Settings DEFAULT_SETTINGS = {
   .lightTimeSleepDurationInMinutes = 1,
@@ -30,7 +30,7 @@ const Settings DEFAULT_SETTINGS = {
   .economyModeDataSendSkipMultiplier = 10,
   .solarVoltageForLightTime = 4.0,
 
-  .smsInformNumber = "",
+  .smsInformNumber = 0,
 
-  ._integrityControlKey = SETTINGS_INTEGRITY_CONTROL_KEY_VALUE
+  ._integrityControlKey = 0
 };

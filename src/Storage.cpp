@@ -14,7 +14,7 @@ Settings Storage::getSettings(){
 }
 
 void Storage::updateSettings(Settings settings){
-    eeprom_write_block((void*)&settings, 0, sizeof(settings));
+    eeprom_update_block((void*)&settings, 0, sizeof(settings));
 }
 
 unsigned long Storage::getRestartsCount(unsigned long integrityControlKey){
@@ -27,8 +27,6 @@ unsigned long Storage::getRestartsCount(unsigned long integrityControlKey){
     return count;
 }
 
-void Storage::incrementRestartsCount(){
-    auto count = getRestartsCount();
-    count++;
-    eeprom_write_block((void*)&count, (void*)RESTARTS_COUNT_OFFSET, sizeof(count));
+void Storage::updateRestartsCount(unsigned long updatedCount){
+    eeprom_update_block((void*)&updatedCount, (void*)RESTARTS_COUNT_OFFSET, sizeof(updatedCount));
 }
