@@ -4,7 +4,7 @@
 #include "SIM800L.h"
 
 // Set serial for debug console (to the Serial Monitor)
-#define GSM_DEBUG
+//#define GSM_DEBUG
 #ifdef GSM_DEBUG
     #define GSM_SERIAL_MONITOR Serial
     //#define SIM800L_INTERNAL_DEBUG
@@ -26,8 +26,7 @@ public:
     void disconnect();
     void reset();
 
-    bool sendRequest(const char* verb, const char* url, char* body, int timeout, char* response, int* httpCode);    
-    //bool sendRequest2(const char* verb, const char* url, char* body, int timeout);    
+    bool sendRequest(const char* verb, const char* url, char* body, int timeout, char* response, int* httpCode);       
     int currentSignalLevel = -1;
 private:
     bool _isConnected = false;
@@ -42,4 +41,7 @@ private:
     uint16_t _httpResponseBuffer;
 
     SIM800L* _sim800;
+
+    void safeDelay(unsigned int ms);
+    bool connectInternal();
 };

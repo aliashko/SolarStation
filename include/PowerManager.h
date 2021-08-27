@@ -13,4 +13,7 @@ public:
 
     bool isSensorsEnabled = false;
     bool isGsmEnabled = false;
+
+private:
+    void safeDelay(unsigned int ms);
 };

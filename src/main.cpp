@@ -1,5 +1,8 @@
 #include <Arduino.h>
 #include <LifecycleManager.h>
+#include "GyverWDT.h"
+
+//#define DEBUG
 
 LifecycleManager* lifecycleManager;
 
@@ -20,11 +23,18 @@ int memoryFree()
 }
 
 void setup() {
-    lifecycleManager = new LifecycleManager();
+   #ifdef DEBUG
+   Serial.begin(9600);
+   Serial.println("START");
+   #endif
+   Watchdog.enable(RESET_MODE, WDT_PRESCALER_1024);
+   lifecycleManager = new LifecycleManager();
 }
 
-void loop() {    
-   Serial.begin(9600);
-   Serial.println(memoryFree());
+void loop() {  
+   #ifdef DEBUG
+   Serial.print("Free memory: ");Serial.println(memoryFree());
+   #endif
 	lifecycleManager->iterate();
+   Watchdog.reset();
 }

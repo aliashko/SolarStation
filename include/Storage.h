@@ -11,6 +11,6 @@ public:
     Settings getSettings();
     void updateSettings(Settings settings);
 
-    unsigned long getRestartsCount(unsigned long integrityControlKey = SETTINGS_INTEGRITY_CONTROL_KEY_VALUE);
+    unsigned long getRestartsCount();
     void updateRestartsCount(unsigned long updatedCount);
 };

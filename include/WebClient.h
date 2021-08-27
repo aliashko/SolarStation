@@ -7,8 +7,11 @@ class WebClient
 {
 public:
     WebClient();
-    bool getUpdates(GetData* data);
-    bool postData(PostData data);
+    bool connect();
+    bool disconnect();
+    bool postData(PostData data, GetData* gdata);
+
+    uint8_t lastSignalLevel;
 
 private:
     GsmClient* _gsm;

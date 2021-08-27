@@ -1,5 +1,6 @@
 #include "WebClient.h"
 #include "config.h"
+#include "GyverWDT.h"
 
 WebClient::WebClient(){
     GsmConfiguration config;
@@ -11,40 +12,24 @@ WebClient::WebClient(){
         HTTP_RESPONSE_BUFFER);
 }
 
-bool WebClient::getUpdates(GetData* data){
+bool WebClient::connect(){
     if(!_gsm->connect())return false;
-
-    BackendClientConfig config;
-    char response[HTTP_RESPONSE_BUFFER]; int httpCode;
-    if(!_gsm->sendRequest("GET", config.GetUpdatesEndpoint, NULL, config.GetUpdatesTimeout, (char*)response, &httpCode)) {
-        _gsm->disconnect();
-        return false;
-    }
-    
-    int intValue = -1;int floatValue = -1;long longValue = -1;
-    intValue = readIntJsonField(response, "lsd:");if(intValue != -1)data->lightTimeSleepDurationInMinutes = intValue;
-    intValue = readIntJsonField(response, "dsd:");if(intValue != -1)data->darkTimeSleepDurationInMinutes = intValue;
-    intValue = readIntJsonField(response, "sdf:");if(intValue != -1)data->sendDataFrequency = intValue;
-    intValue = readIntJsonField(response, "gdf:");if(intValue != -1)data->getDataFrequency = intValue;
-
-    floatValue = readFloatJsonField(response, "smv:");if(floatValue != -1)data->safeModeVoltage = floatValue;
-    floatValue = readFloatJsonField(response, "emv:");if(floatValue != -1)data->economyModeVoltage = floatValue;
-    intValue = readIntJsonField(response, "emm:");if(intValue != -1)data->economyModeDataSendSkipMultiplier = intValue;
-    floatValue = readFloatJsonField(response, "svl:");if(floatValue != -1)data->solarVoltageForLightTime = floatValue;
-
-    longValue = readLongJsonField(response, "sms:");if(longValue != -1)data->smsInformNumber = longValue;
-
-    _gsm->disconnect();
+    Watchdog.reset();
+    lastSignalLevel = _gsm->currentSignalLevel;
     return true;
 }
 
-bool WebClient::postData(PostData data){
-    if(!_gsm->connect())return false;
+bool WebClient::disconnect(){
+    _gsm->disconnect();
+    Watchdog.reset();
+    return true;
+}
 
+bool WebClient::postData(PostData data, GetData* gdata){
     BackendClientConfig config;
-    char* response = new char[HTTP_RESPONSE_BUFFER]; int httpCode;
+    char response[HTTP_RESPONSE_BUFFER]; int httpCode;
 
-    char request[110];char buf[12];
+    char request[150];char buf[12];
     request[0] = '\0';
 
     strcat(request,"{");
@@ -52,6 +37,7 @@ bool WebClient::postData(PostData data){
     itoa((int)(data.temperature*10),buf,10);jsonConcat(request, "t", buf);
     itoa((int)(data.humidity*10),buf,10);jsonConcat(request, "h", buf);
     utoa(data.raindropLevel,buf,10);jsonConcat(request, "r", buf);
+    utoa(data.soilMoistureLevel,buf,10);jsonConcat(request, "sm", buf);
     utoa(data.gsmSignalLevel,buf,10);jsonConcat(request, "gl", buf);
     itoa((int)(data.solarVoltage*100),buf,10);jsonConcat(request, "sv", buf);
     itoa((int)(data.solarCurrent*100),buf,10);jsonConcat(request, "sc", buf);
@@ -64,13 +50,26 @@ bool WebClient::postData(PostData data){
     strcat(request,"}");
 
     if(!_gsm->sendRequest("POST", config.PostDataEndpoint, request, config.PostDataTimeout, response, &httpCode)) {
-        delete[] response;
-        _gsm->disconnect();
+        //delete[] response;
+        Watchdog.reset();
         return false;
     }
 
-    delete[] response;
-    _gsm->disconnect();
+    int intValue = -1;int floatValue = -1;long longValue = -1;
+    intValue = readIntJsonField(response, "lsd:");if(intValue != -1)gdata->lightTimeSleepDurationInMinutes = intValue;
+    intValue = readIntJsonField(response, "dsd:");if(intValue != -1)gdata->darkTimeSleepDurationInMinutes = intValue;
+    intValue = readIntJsonField(response, "sdf:");if(intValue != -1)gdata->sendDataFrequency = intValue;
+
+    floatValue = readFloatJsonField(response, "smv:");if(floatValue != -1)gdata->safeModeVoltage = floatValue;
+    floatValue = readFloatJsonField(response, "emv:");if(floatValue != -1)gdata->economyModeVoltage = floatValue;
+    intValue = readIntJsonField(response, "emm:");if(intValue != -1)gdata->economyModeDataSendSkipMultiplier = intValue;
+    floatValue = readFloatJsonField(response, "svl:");if(floatValue != -1)gdata->solarVoltageForLightTime = floatValue;
+
+    longValue = readLongJsonField(response, "sms:");if(longValue != -1)gdata->smsInformNumber = longValue;
+    Watchdog.reset();
+
+    //delete[] response;
+    Watchdog.reset();
     return true;
 }
 
@@ -95,7 +94,7 @@ long WebClient::readLongJsonField(char* str, const char* field){
 float WebClient::readFloatJsonField(char* str, const char* field){
     auto intValue = readIntJsonField(str, field);
     if(intValue == -1) return -1;
-    return (float)intValue/10.0;
+    return (float)((float)intValue/10.0);
 }
 
 bool WebClient::readStringJsonField(char* str, const char* field, char* returnValue){    

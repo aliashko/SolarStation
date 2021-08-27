@@ -1,6 +1,9 @@
 #include "LifecycleManager.h"
 #include "DebugModeManager.h"
 #include "config.h"
+#include "GyverWDT.h"
+
+//#define DEBUG
 
 LifecycleManager::LifecycleManager() {
     _powerManager = new PowerManager();
@@ -11,69 +14,93 @@ LifecycleManager::LifecycleManager() {
     initialize();
 }
 
-void LifecycleManager::iterate() {
-    _sendDataIterationCounter++;
-    _getDataIterationCounter++;  
-
-    if(_systemState.powerMode == SystemPowerMode::Safe){
-       measureForSafeMode();
-    }
-    else {
-       measure();
-    }
-
-    updateSystemState();
-
-    if(_systemState.powerMode != SystemPowerMode::Safe){
-        if(_sendDataIterationCounter >= 
-            _settings.sendDataFrequency * (_systemState.powerMode == SystemPowerMode::Economy?_settings.economyModeDataSendSkipMultiplier:1)){
-            sendData();
-        }
-
-        if(_systemState.powerMode == SystemPowerMode::Powerfull){
-            if(_getDataIterationCounter >= _settings.getDataFrequency){
-                getUpdates();
-            }
-        }
-    }
-    
-    sleep();
-}
-
 void LifecycleManager::initialize(){
+    #ifdef DEBUG
+    Serial.println("LifecycleManager::initialize");
+    #endif
     DebugModeManager::initializeHardware();
 
     _settings = _storage->getSettings();
     _systemState = SystemState{
         .timestamp = 0,
         .isDebugMode = DebugModeManager::checkIfDebugModeRequested(),
-        .powerMode = SystemPowerMode::Unknown,
-        .restartsCount = _storage->getRestartsCount(_settings._integrityControlKey),
-        .gsmErrors = 0,
+        .powerMode = SystemPowerMode::Safe
     };
+    _systemState.gsmErrors = 0;
+
+    if(_settings._integrityControlKey == SETTINGS_INTEGRITY_CONTROL_KEY_VALUE){
+        _systemState.restartsCount = _storage->getRestartsCount();
+    }
+    else {
+        #ifdef DEBUG
+        Serial.print(">>> settings INTEGRITY mismatch ");Serial.println(_settings._integrityControlKey);
+        #endif
+        _systemState.restartsCount = 0;
+        _settings._integrityControlKey = SETTINGS_INTEGRITY_CONTROL_KEY_VALUE;
+        _storage->updateSettings(_settings);
+    }
 
     if(_systemState.isDebugMode)DebugModeManager::blinkAllLeds();
     else _storage->updateRestartsCount(_systemState.restartsCount + 1);
 }
 
+void LifecycleManager::iterate() {
+    #ifdef DEBUG
+    Serial.println("LifecycleManager::iterate");
+    #endif
+    _sendDataIterationCounter++;
+
+    if(_systemState.powerMode == SystemPowerMode::Safe){
+       measureForSafeMode();
+       updateSystemState();
+    }
+    else {
+        measure();
+        updateSystemState();
+
+        if(_systemState.powerMode != SystemPowerMode::Safe){
+            if(_sendDataIterationCounter >= 
+                _settings.sendDataFrequency * (_systemState.powerMode == SystemPowerMode::Economy?_settings.economyModeDataSendSkipMultiplier:1)){
+                sendData();
+                _sendDataIterationCounter = 0;
+            }
+        }
+    }
+
+    Watchdog.reset();
+    sleep();
+}
+
 void LifecycleManager::measure(){
+    #ifdef DEBUG
+    Serial.println("LifecycleManager::measure");
+    #endif
     if(_systemState.isDebugMode) DebugModeManager::greenLedMode(true);
     _powerManager->changeSensorsPower(true);
     delay(SENSORS_WARMUP_DELAY_MS);
 
     _sensors->connect();
+
     _currentWeather = _sensors->getWeather();
     _currentPowerLevels = _sensors->getPowerLevels();
-
+  
     _powerManager->changeSensorsPower(false);
     if(_systemState.isDebugMode) DebugModeManager::greenLedMode(false);
 }
 
 void LifecycleManager::measureForSafeMode(){
-    _currentPowerLevels = _sensors->getPowerLevels();
+    #ifdef DEBUG
+    Serial.println("LifecycleManager::measureForSafeMode");
+    #endif
+
+    _currentPowerLevels = _sensors->getPowerLevels(true);
 }
 
 void LifecycleManager::sendData(){
+    #ifdef DEBUG
+    Serial.println("LifecycleManager::sendData");
+    #endif
+
     if(_systemState.isDebugMode){ DebugModeManager::greenLedMode(true);DebugModeManager::blueLedMode(true);}
     _powerManager->changeGsmPower(true);
     delay(GSM_WARMUP_DELAY_MS);
@@ -84,8 +111,9 @@ void LifecycleManager::sendData(){
         .temperature = _currentWeather.temperature,
         .humidity = _currentWeather.humidity,
         .raindropLevel = _currentWeather.raindropLevel,
+        .soilMoistureLevel = _currentWeather.soilMoistureLevel,
 
-        .gsmSignalLevel = 0,
+        .gsmSignalLevel = _webClient->lastSignalLevel,
 
         .solarVoltage = _currentPowerLevels.solarVoltage,
         .solarCurrent = _currentPowerLevels.solarCurrent,
@@ -97,52 +125,50 @@ void LifecycleManager::sendData(){
         .restartsCount = _systemState.restartsCount,
         .gsmErrors = _systemState.gsmErrors
     };
-    if(!_webClient->postData(data))_systemState.gsmErrors++;
+    if(!_webClient->connect())_systemState.gsmErrors++;
+    else {
+        GetData gdata;
+        if(!_webClient->postData(data, &gdata))_systemState.gsmErrors++;
+        
+        _settings.lightTimeSleepDurationInMinutes = gdata.lightTimeSleepDurationInMinutes;
+        _settings.darkTimeSleepDurationInMinutes = gdata.darkTimeSleepDurationInMinutes;
+        _settings.sendDataFrequency = gdata.sendDataFrequency;
+        _settings.getDataFrequency = gdata.getDataFrequency;
+        _settings.safeModeVoltage = gdata.safeModeVoltage;
+        _settings.economyModeVoltage = gdata.economyModeVoltage;
+        _settings.smsInformNumber = gdata.smsInformNumber;
+        _storage->updateSettings(_settings);
+
+        _webClient->disconnect();
+    }
 
     _powerManager->changeGsmPower(false);
     if(_systemState.isDebugMode){ DebugModeManager::greenLedMode(false);DebugModeManager::blueLedMode(false);}
 }
 
-void LifecycleManager::getUpdates(){
-    if(_systemState.isDebugMode) DebugModeManager::blueLedMode(true);
-    _powerManager->changeGsmPower(true);
-    delay(GSM_WARMUP_DELAY_MS);
-
-    GetData data;
-    if(_webClient->getUpdates(&data)){
-        _settings.lightTimeSleepDurationInMinutes = data.lightTimeSleepDurationInMinutes;
-        _settings.darkTimeSleepDurationInMinutes = data.darkTimeSleepDurationInMinutes;
-        _settings.sendDataFrequency = data.sendDataFrequency;
-        _settings.getDataFrequency = data.getDataFrequency;
-        _settings.safeModeVoltage = data.safeModeVoltage;
-        _settings.economyModeVoltage = data.economyModeVoltage;
-        _settings.smsInformNumber = data.smsInformNumber;
-    }
-    else _systemState.gsmErrors++;
-
-    _powerManager->changeGsmPower(false);
-    if(_systemState.isDebugMode)DebugModeManager::blueLedMode(false);
-}
-
 void LifecycleManager::updateSystemState(){    
     _systemState.timestamp = millis() / 1000;
 
-    if(_currentPowerLevels.batteryVoltage == 0)_systemState.powerMode = SystemPowerMode::Unknown;
-    else if(_currentPowerLevels.batteryVoltage <= _settings.safeModeVoltage)_systemState.powerMode = SystemPowerMode::Safe;
+    if(_currentPowerLevels.batteryVoltage <= _settings.safeModeVoltage)_systemState.powerMode = SystemPowerMode::Safe;
     else if(_currentPowerLevels.batteryVoltage <= _settings.economyModeVoltage)_systemState.powerMode = SystemPowerMode::Economy;
     else _systemState.powerMode = SystemPowerMode::Powerfull;
+
+    #ifdef DEBUG
+    Serial.print("LifecycleManager::updateSystemState powerMode=");Serial.println((int)_systemState.powerMode);
+    #endif
 
     if(_systemState.isDebugMode){
         DebugModeManager::redLedMode(false);DebugModeManager::yellowLedMode(false);
         if(_systemState.powerMode == SystemPowerMode::Safe)DebugModeManager::redLedMode(true);
         else if(_systemState.powerMode == SystemPowerMode::Economy)DebugModeManager::yellowLedMode(true);
-        else if(_systemState.powerMode == SystemPowerMode::Unknown){DebugModeManager::yellowLedMode(true);DebugModeManager::redLedMode(true);}
     }
 }
 
 void LifecycleManager::sleep(){
-    if(_currentPowerLevels.solarVoltage >= _settings.solarVoltageForLightTime)
+    if(_currentPowerLevels.solarVoltage >= _settings.solarVoltageForLightTime){
         _powerManager->deepSleep(_settings.lightTimeSleepDurationInMinutes /** 60*/);
-
-    _powerManager->deepSleep(_settings.darkTimeSleepDurationInMinutes /** 60*/);
+    }
+    else {
+        _powerManager->deepSleep(_settings.darkTimeSleepDurationInMinutes /** 60*/);
+    }
 }

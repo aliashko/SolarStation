@@ -27,7 +27,6 @@ private:
     WebClient* _webClient;
 
     unsigned int _sendDataIterationCounter = 0;
-    unsigned int _getDataIterationCounter = 0;
     Weather _currentWeather;
     PowerLevels _currentPowerLevels;
 
