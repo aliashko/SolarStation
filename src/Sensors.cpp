@@ -6,14 +6,17 @@
 Sensors::Sensors(){
     _dht = new SimpleDHT22(DHT22_PIN);
     _ina219 = new INA219_WE(INA_I2C_ADDRESS);
+    analogReference(EXTERNAL);
     pinMode(RAINDROP_PIN, INPUT);
     pinMode(SOIL_PIN, INPUT);
+    pinMode(ARDUINO_VOLTAGE_PIN, INPUT);
+    pinMode(BATTERY_VOLTAGE_PIN, INPUT);
     Wire.begin();
 }
 
 bool Sensors::connect(){
     _isConnected = _ina219->init();
-    _ina219->setMeasureMode(TRIGGERED);
+    _ina219->setADCMode(SAMPLE_MODE_128);
 
     #ifdef DEBUG
     Serial.print("Sensors (INA219) connection: ");Serial.println(_isConnected);
@@ -31,8 +34,12 @@ Weather Sensors::getWeather(){
         #endif
     }
 
+    analogReference(DEFAULT);
+    delay(100);
     data.raindropLevel = 1023 - getDataFromAnalogPin(RAINDROP_PIN);
     data.soilMoistureLevel = 1023 - getDataFromAnalogPin(SOIL_PIN);
+    analogReference(EXTERNAL);
+    delay(100);
     
     #ifdef DEBUG
     Serial.print("Temp ");Serial.println(data.temperature);    
@@ -46,9 +53,10 @@ Weather Sensors::getWeather(){
 
 PowerLevels Sensors::getPowerLevels(bool useOnlyBuiltinSensors){
     PowerLevels data;
-    data.arduinoVoltage = getVoltageFromAnalogPin(ARDUINO_VOLTAGE_PIN, ARDUINO_VOLTMETER_R2, ARDUINO_VOLTMETER_R1)-0.25;
-    data.batteryVoltage = getVoltageFromAnalogPin(BATTERY_VOLTAGE_PIN, BATTERY_VOLTMETER_R2, BATTERY_VOLTMETER_R1)-0.25;
-    data.gsmVoltage = data.batteryVoltage;//getVoltageFromAnalogPin(GSM_VOLTAGE_PIN, GSM_VOLTMETER_R2, GSM_VOLTMETER_R1);
+    float aref = 3.3 * 32000.0 / (float)(32000 + REF_RESISTOR);
+    data.arduinoVoltage = getVoltageFromAnalogPin(ARDUINO_VOLTAGE_PIN, ARDUINO_VOLTMETER_R1, ARDUINO_VOLTMETER_R2, aref);
+    data.batteryVoltage = getVoltageFromAnalogPin(BATTERY_VOLTAGE_PIN, BATTERY_VOLTMETER_R1, BATTERY_VOLTMETER_R2, aref);
+    data.gsmVoltage = data.batteryVoltage;
     
     if(!useOnlyBuiltinSensors){
         data.solarCurrent = _ina219->getCurrent_mA();
@@ -74,19 +82,13 @@ float Sensors::getDataFromAnalogPin(uint8_t pin){
     return Vvalue=(float)Vvalue/10.0;
 }
 
-float Sensors::getVoltageFromAnalogPin(uint8_t pin, int r1, int r2){
-    float Tvoltage=0.0;
-    float Vvalue=0.0,Rvalue=0.0;
+float Sensors::getVoltageFromAnalogPin(uint8_t pin, long r1, long r2, float arefV){
     float RatioFactor=(float)r2/(float)(r1+r2);
 
-    for(unsigned int i=0;i<10;i++){
-        Vvalue=Vvalue+analogRead(pin);         //Read analog Voltage
-        delay(5);                              //ADC stable
-    }
+    float Vvalue=getDataFromAnalogPin(pin);            //Find average of 10 values
 
-    Vvalue=(float)Vvalue/10.0;            //Find average of 10 values
-    Rvalue=(float)(Vvalue/1023.0)*5;      //Convert Voltage in 5v factor
-    Tvoltage=Rvalue/RatioFactor;          //Find original voltage by multiplying with factor
+    float Rvalue=1024.0 / (float)(Vvalue * arefV);      //Convert Voltage in 5v factor
+    float Tvoltage=Rvalue/RatioFactor;          //Find original voltage by multiplying with factor
 
     return Tvoltage;
 }

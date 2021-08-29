@@ -12,7 +12,7 @@ PowerManager::PowerManager(){
     changeGsmPower(isGsmEnabled);
 }
 
-void PowerManager::deepSleep(int seconds){
+void PowerManager::deepSleep(int seconds){//seconds=1;
     #ifdef DEBUG
     Serial.print("PowerManager::deepSleep ");Serial.println(seconds);
     #endif
@@ -22,8 +22,8 @@ void PowerManager::deepSleep(int seconds){
 
 void PowerManager::safeDelay(unsigned int ms){
 	for(unsigned int i = 0; i < ms; i += 1000){
-        //power.sleepDelay(ms - i > 1000 ? 1000 : (ms - i));
-        delay(ms - i > 1000 ? 1000 : (ms - i));
+        power.sleepDelay(ms - i > 1000 ? 1000 : (ms - i));
+        //delay(ms - i > 1000 ? 1000 : (ms - i));
 		Watchdog.reset();
 	}
 }

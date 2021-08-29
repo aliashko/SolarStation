@@ -55,9 +55,9 @@ bool WebClient::postData(PostData data, GetData* gdata){
         return false;
     }
 
-    int intValue = -1;int floatValue = -1;long longValue = -1;
-    intValue = readIntJsonField(response, "lsd:");if(intValue != -1)gdata->lightTimeSleepDurationInMinutes = intValue;
-    intValue = readIntJsonField(response, "dsd:");if(intValue != -1)gdata->darkTimeSleepDurationInMinutes = intValue;
+    int intValue = -1;float floatValue = -1;
+    intValue = readIntJsonField(response, "lsd:");if(intValue != -1)gdata->lightTimeSleepDurationSeconds = intValue;
+    intValue = readIntJsonField(response, "dsd:");if(intValue != -1)gdata->darkTimeSleepDurationSeconds = intValue;
     intValue = readIntJsonField(response, "sdf:");if(intValue != -1)gdata->sendDataFrequency = intValue;
 
     floatValue = readFloatJsonField(response, "smv:");if(floatValue != -1)gdata->safeModeVoltage = floatValue;
@@ -65,7 +65,7 @@ bool WebClient::postData(PostData data, GetData* gdata){
     intValue = readIntJsonField(response, "emm:");if(intValue != -1)gdata->economyModeDataSendSkipMultiplier = intValue;
     floatValue = readFloatJsonField(response, "svl:");if(floatValue != -1)gdata->solarVoltageForLightTime = floatValue;
 
-    longValue = readLongJsonField(response, "sms:");if(longValue != -1)gdata->smsInformNumber = longValue;
+    intValue = readIntJsonField(response, "ver:");if(intValue != -1)gdata->version = intValue;
     Watchdog.reset();
 
     //delete[] response;

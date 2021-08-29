@@ -7,7 +7,7 @@ const unsigned int GSM_INITIALIZATION_DELAY_MS = 6000;
 const unsigned int GSM_OPERATIONS_DELAY_MS = 1000;
 const unsigned int POWER_SWITCH_STABILIZATION_DELAY = 1000;
 
-const unsigned int HTTP_RESPONSE_BUFFER = 100;
+const unsigned int HTTP_RESPONSE_BUFFER = 90;
 
 // POWER (MOSFET CONTROLLING)
 const uint8_t SENSORS_POWER_CONTROL_PIN = 11;
@@ -16,8 +16,8 @@ const uint8_t SIM800_POWER_CONTROL_PIN = 12; // DISABLED PHUSICALLY
 // METEO SENSORS 5V VCC
 const uint8_t DHT22_PIN = 7; //5V
 const uint8_t EXTERNAL_DHT_PIN = 13; //5V
-const uint8_t RAINDROP_PIN = A7; //5V
-const uint8_t SOIL_PIN = A6; //5V
+const uint8_t RAINDROP_PIN = A6; //5V
+const uint8_t SOIL_PIN = A7; //5V
 
 // INA219 (current sensor) 5V VCC
 const uint8_t INA_I2C_ADDRESS = 0x40; //5V
@@ -35,10 +35,11 @@ struct GsmConfiguration {
 // VOLTAGE SENSORS SETTINGS
 const uint8_t BATTERY_VOLTAGE_PIN = A2;
 const uint8_t ARDUINO_VOLTAGE_PIN = A3;
-const unsigned int BATTERY_VOLTMETER_R1 = 18950;
-const unsigned int BATTERY_VOLTMETER_R2 = 9990;
-const unsigned int ARDUINO_VOLTMETER_R1 = 19280;
-const unsigned int ARDUINO_VOLTMETER_R2 = 9850;
+const unsigned long BATTERY_VOLTMETER_R1 = (long)19350 + (long)29590;// 18950 + 9550
+const unsigned long BATTERY_VOLTMETER_R2 = 9550; //9990
+const unsigned long ARDUINO_VOLTMETER_R1 = (long)19730 + (long)25050; //19280 + 9750
+const unsigned long ARDUINO_VOLTMETER_R2 = 9750; //9850
+const unsigned int REF_RESISTOR = 977;
 
 // BUTTONS
 const uint8_t DEBUG_BUTTON_PIN = 2;
@@ -51,7 +52,5 @@ const uint8_t RED_LED_PIN = 6;
 
 struct BackendClientConfig {
     const char* PostDataEndpoint = "http://solarstation.liashko.space/api/postdata";
-    const char* GetUpdatesEndpoint = "http://solarstation.liashko.space/api/getupdates";
-    const int GetUpdatesTimeout = 10000;
     const int PostDataTimeout = 10000;
 };

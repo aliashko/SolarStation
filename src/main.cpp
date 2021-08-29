@@ -38,3 +38,10 @@ void loop() {
 	lifecycleManager->iterate();
    Watchdog.reset();
 }
+
+void safeDelay(unsigned int ms){
+	for(unsigned int i = 0; i < ms; i += 1000){
+		delay(ms - i > 1000 ? 1000 : (ms - i));
+		Watchdog.reset();
+	}
+}

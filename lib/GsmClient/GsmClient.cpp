@@ -1,5 +1,8 @@
 #include "GsmClient.h"
 #include "GyverWDT.h"
+
+extern void safeDelay(unsigned int ms);
+
 #define POST_CONTENT_TYPE "application/json"
 const uint8_t MAX_RETRY_COUNT = 10;
 const uint8_t MAX_CONNECTION_RETRY_COUNT = 3;
@@ -210,11 +213,4 @@ bool GsmClient::sendRequest(const char* verb, const char* url, char* body, int t
 		return false;
 	}	
 	return true;
-}
-
-void GsmClient::safeDelay(unsigned int ms){
-	for(unsigned int i = 0; i < ms; i += 1000){
-		delay(ms - i > 1000 ? 1000 : (ms - i));
-		Watchdog.reset();
-	}
 }

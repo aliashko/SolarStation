@@ -1,15 +1,14 @@
 #pragma once
 
 struct GetData {
-    unsigned int lightTimeSleepDurationInMinutes;
-    unsigned int darkTimeSleepDurationInMinutes;
+    unsigned int lightTimeSleepDurationSeconds;
+    unsigned int darkTimeSleepDurationSeconds;
     unsigned int sendDataFrequency;
-    unsigned int getDataFrequency;
 
     float safeModeVoltage;
     float economyModeVoltage;
     unsigned int economyModeDataSendSkipMultiplier;
     float solarVoltageForLightTime;
 
-    unsigned long smsInformNumber;
+    unsigned int version;
 };

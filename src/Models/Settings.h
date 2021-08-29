@@ -2,35 +2,31 @@
 #include "Arduino.h"
 
 struct Settings {
-  unsigned int lightTimeSleepDurationInMinutes;
-  unsigned int darkTimeSleepDurationInMinutes;
+  unsigned int lightTimeSleepDurationSeconds;
+  unsigned int darkTimeSleepDurationSeconds;
   unsigned int sendDataFrequency;
-  unsigned int getDataFrequency;
 
   float safeModeVoltage;
   float economyModeVoltage;
   unsigned int economyModeDataSendSkipMultiplier;
   float solarVoltageForLightTime;
 
-  unsigned long  smsInformNumber;
-
+  unsigned int _version;
   unsigned long _integrityControlKey;
 };
 
-const unsigned long SETTINGS_INTEGRITY_CONTROL_KEY_VALUE = 123456798;
+const unsigned long SETTINGS_INTEGRITY_CONTROL_KEY_VALUE = 123456799;
 
 const Settings DEFAULT_SETTINGS = {
-  .lightTimeSleepDurationInMinutes = 2,
-  .darkTimeSleepDurationInMinutes = 2,
+  .lightTimeSleepDurationSeconds = 3 * 60,
+  .darkTimeSleepDurationSeconds = 20 * 60,
   .sendDataFrequency = 1,
-  .getDataFrequency = 1,
 
   .safeModeVoltage = 3.7,
   .economyModeVoltage = 4.5,
-  .economyModeDataSendSkipMultiplier = 10,
-  .solarVoltageForLightTime = 4.0,
+  .economyModeDataSendSkipMultiplier = 9,
+  .solarVoltageForLightTime = 3.0,
 
-  .smsInformNumber = 0,
-
+  ._version = 1,
   ._integrityControlKey = 0
 };

@@ -42,6 +42,5 @@ private:
 
     SIM800L* _sim800;
 
-    void safeDelay(unsigned int ms);
     bool connectInternal();
 };

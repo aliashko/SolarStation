@@ -3,6 +3,7 @@
 #include "config.h"
 #include "GyverWDT.h"
 
+extern void safeDelay(unsigned int ms);
 //#define DEBUG
 
 LifecycleManager::LifecycleManager() {
@@ -62,7 +63,6 @@ void LifecycleManager::iterate() {
             if(_sendDataIterationCounter >= 
                 _settings.sendDataFrequency * (_systemState.powerMode == SystemPowerMode::Economy?_settings.economyModeDataSendSkipMultiplier:1)){
                 sendData();
-                _sendDataIterationCounter = 0;
             }
         }
     }
@@ -77,7 +77,8 @@ void LifecycleManager::measure(){
     #endif
     if(_systemState.isDebugMode) DebugModeManager::greenLedMode(true);
     _powerManager->changeSensorsPower(true);
-    delay(SENSORS_WARMUP_DELAY_MS);
+    safeDelay(SENSORS_WARMUP_DELAY_MS);
+    Watchdog.reset();
 
     _sensors->connect();
 
@@ -130,15 +131,17 @@ void LifecycleManager::sendData(){
         GetData gdata;
         if(!_webClient->postData(data, &gdata))_systemState.gsmErrors++;
         
-        _settings.lightTimeSleepDurationInMinutes = gdata.lightTimeSleepDurationInMinutes;
-        _settings.darkTimeSleepDurationInMinutes = gdata.darkTimeSleepDurationInMinutes;
-        _settings.sendDataFrequency = gdata.sendDataFrequency;
-        _settings.getDataFrequency = gdata.getDataFrequency;
-        _settings.safeModeVoltage = gdata.safeModeVoltage;
-        _settings.economyModeVoltage = gdata.economyModeVoltage;
-        _settings.smsInformNumber = gdata.smsInformNumber;
-        _storage->updateSettings(_settings);
+        if(gdata.version != _settings._version){
+            _settings.lightTimeSleepDurationSeconds = gdata.lightTimeSleepDurationSeconds;
+            _settings.darkTimeSleepDurationSeconds = gdata.darkTimeSleepDurationSeconds;
+            _settings.sendDataFrequency = gdata.sendDataFrequency;
+            _settings.safeModeVoltage = gdata.safeModeVoltage;
+            _settings.economyModeVoltage = gdata.economyModeVoltage;
+            _settings._version = gdata.version;
+            _storage->updateSettings(_settings);
+        }
 
+        _sendDataIterationCounter = 0;
         _webClient->disconnect();
     }
 
@@ -166,9 +169,9 @@ void LifecycleManager::updateSystemState(){
 
 void LifecycleManager::sleep(){
     if(_currentPowerLevels.solarVoltage >= _settings.solarVoltageForLightTime){
-        _powerManager->deepSleep(_settings.lightTimeSleepDurationInMinutes /** 60*/);
+        _powerManager->deepSleep(_settings.lightTimeSleepDurationSeconds);
     }
     else {
-        _powerManager->deepSleep(_settings.darkTimeSleepDurationInMinutes /** 60*/);
+        _powerManager->deepSleep(_settings.darkTimeSleepDurationSeconds);
     }
 }

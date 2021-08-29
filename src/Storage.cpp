@@ -6,11 +6,11 @@ Storage::Storage(){}
 
 Settings Storage::getSettings(){
     Settings settings;
-    eeprom_read_block((void*)&settings, 0, sizeof(settings));
+    eeprom_read_block((void*)&settings, (void*)100, sizeof(settings));
 
     #ifdef DEBUG
     Serial.print(F("Storage::getSettings "));
-    Serial.print(F("lightTimeSleepDurationInMinutes="));Serial.print(settings.lightTimeSleepDurationInMinutes);
+    Serial.print(F("lightTimeSleepDurationInMinutes="));Serial.print(settings.lightTimeSleepDurationSeconds);
     Serial.print(F(" econ="));Serial.print(settings.economyModeVoltage);
     Serial.print(F(" _integrityControlKey="));Serial.println(settings._integrityControlKey);
     #endif
@@ -27,7 +27,7 @@ void Storage::updateSettings(Settings settings){
     Serial.print(F("Storage::updateSettings sizeof="));Serial.println((int)sizeof(settings));
     Serial.print(F("Storage::updateSettings econ="));Serial.println(settings.economyModeVoltage);
     #endif
-    eeprom_update_block((void*)&settings, 0, sizeof(settings));
+    eeprom_update_block((void*)&settings, (void*)100, sizeof(settings));
     #ifdef DEBUG
     Serial.println(F("Storage::updateSettings"));
     #endif

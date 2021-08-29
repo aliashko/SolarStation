@@ -20,6 +20,6 @@ private:
     SimpleDHT22* _dht;
     INA219_WE* _ina219;
 
-    float getVoltageFromAnalogPin(uint8_t pin, int r1, int r2);
+    float getVoltageFromAnalogPin(uint8_t pin, long r1, long r2, float arefV);
     float getDataFromAnalogPin(uint8_t pin);
 };
