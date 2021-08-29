@@ -87,7 +87,7 @@ float Sensors::getVoltageFromAnalogPin(uint8_t pin, long r1, long r2, float aref
 
     float Vvalue=getDataFromAnalogPin(pin);            //Find average of 10 values
 
-    float Rvalue=1024.0 / (float)(Vvalue * arefV);      //Convert Voltage in 5v factor
+    float Rvalue= (float)(Vvalue * arefV) / 1024.0;      //Convert Voltage in aref factor
     float Tvoltage=Rvalue/RatioFactor;          //Find original voltage by multiplying with factor
 
     return Tvoltage;

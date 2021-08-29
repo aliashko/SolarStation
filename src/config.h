@@ -35,10 +35,10 @@ struct GsmConfiguration {
 // VOLTAGE SENSORS SETTINGS
 const uint8_t BATTERY_VOLTAGE_PIN = A2;
 const uint8_t ARDUINO_VOLTAGE_PIN = A3;
-const unsigned long BATTERY_VOLTMETER_R1 = (long)19350 + (long)29590;// 18950 + 9550
-const unsigned long BATTERY_VOLTMETER_R2 = 9550; //9990
-const unsigned long ARDUINO_VOLTMETER_R1 = (long)19730 + (long)25050; //19280 + 9750
-const unsigned long ARDUINO_VOLTMETER_R2 = 9750; //9850
+const unsigned long BATTERY_VOLTMETER_R1 = (long)18950 + (long)9550
+const unsigned long BATTERY_VOLTMETER_R2 = 9990;
+const unsigned long ARDUINO_VOLTMETER_R1 = (long)19280 + (long)9750
+const unsigned long ARDUINO_VOLTMETER_R2 = 9850
 const unsigned int REF_RESISTOR = 977;
 
 // BUTTONS
