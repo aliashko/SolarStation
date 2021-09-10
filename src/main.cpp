@@ -5,7 +5,7 @@
 //#define DEBUG
 
 LifecycleManager* lifecycleManager;
-
+#ifdef DEBUG
 // Переменные, создаваемые процессом сборки,
 // когда компилируется скетч
 extern int __bss_end;
@@ -21,6 +21,7 @@ int memoryFree()
       freeValue = ((int)&freeValue) - ((int)__brkval);
    return freeValue;
 }
+#endif
 
 void setup() {
    #ifdef DEBUG

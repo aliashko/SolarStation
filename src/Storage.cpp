@@ -4,18 +4,35 @@
 
 Storage::Storage(){}
 
+Settings Storage::getDefaultSettings(){
+    #ifdef DEBUG
+    Serial.println(F("Storage::getDefaultSettings "));
+    #endif
+    return DEFAULT_SETTINGS;
+}
+
 Settings Storage::getSettings(){
     Settings settings;
-    eeprom_read_block((void*)&settings, (void*)100, sizeof(settings));
+    eeprom_read_block((void*)&settings, (void*)SETTINGS_OFFSET, sizeof(settings));
 
     #ifdef DEBUG
     Serial.print(F("Storage::getSettings "));
-    Serial.print(F("lightTimeSleepDurationInMinutes="));Serial.print(settings.lightTimeSleepDurationSeconds);
-    Serial.print(F(" econ="));Serial.print(settings.economyModeVoltage);
-    Serial.print(F(" _integrityControlKey="));Serial.println(settings._integrityControlKey);
+    Serial.print(F("darkTimeSleepDurationSeconds="));Serial.println(settings.darkTimeSleepDurationSeconds);
+    Serial.print(F("lightTimeSleepDurationSeconds="));Serial.println(settings.lightTimeSleepDurationSeconds);
+    Serial.print(F("sendDataFrequency="));Serial.println(settings.sendDataFrequency);
+    Serial.print(F("SkipMultiplier="));Serial.println(settings.economyModeDataSendSkipMultiplier);
+    Serial.print(F("resetSend="));Serial.println(settings.resetSendDataCounterAfterFailure);
+    Serial.print(F("econV="));Serial.println(settings.economyModeVoltage);
+    Serial.print(F("safeV="));Serial.println(settings.safeModeVoltage);
+    Serial.print(F("solarV="));Serial.println(settings.solarVoltageForLightTime);
+    Serial.print(F("_version="));Serial.println(settings._version);
+    Serial.print(F("_integrityControlKey="));Serial.println(settings._integrityControlKey);
     #endif
 
-    if(settings._integrityControlKey != SETTINGS_INTEGRITY_CONTROL_KEY_VALUE){
+    if(settings._integrityControlKey != SETTINGS_INTEGRITY_CONTROL_KEY_VALUE || !isSettingsValid(settings)){
+        #ifdef DEBUG
+        Serial.println(F("Default settings returned"));
+        #endif
         return DEFAULT_SETTINGS;
     }
 
@@ -24,10 +41,22 @@ Settings Storage::getSettings(){
 
 void Storage::updateSettings(Settings settings){
     #ifdef DEBUG
-    Serial.print(F("Storage::updateSettings sizeof="));Serial.println((int)sizeof(settings));
-    Serial.print(F("Storage::updateSettings econ="));Serial.println(settings.economyModeVoltage);
+    Serial.print(F("Storage::updateSettings"));
+    Serial.print(F("darkTimeSleepDurationSeconds="));Serial.println(settings.darkTimeSleepDurationSeconds);
+    Serial.print(F("lightTimeSleepDurationSeconds="));Serial.println(settings.lightTimeSleepDurationSeconds);
+    Serial.print(F("sendDataFrequency="));Serial.println(settings.sendDataFrequency);
+    Serial.print(F("SkipMultiplier="));Serial.println(settings.economyModeDataSendSkipMultiplier);
+    Serial.print(F("resetSend="));Serial.println(settings.resetSendDataCounterAfterFailure);
+    Serial.print(F("econV="));Serial.println(settings.economyModeVoltage);
+    Serial.print(F("safeV="));Serial.println(settings.safeModeVoltage);
+    Serial.print(F("solarV="));Serial.println(settings.solarVoltageForLightTime);
+    Serial.print(F("_version="));Serial.println(settings._version);
+    Serial.print(F("_integrityControlKey="));Serial.println(settings._integrityControlKey);
     #endif
-    eeprom_update_block((void*)&settings, (void*)100, sizeof(settings));
+
+    if(!isSettingsValid(settings))return;        
+
+    eeprom_update_block((void*)&settings, (void*)SETTINGS_OFFSET, sizeof(settings));
     #ifdef DEBUG
     Serial.println(F("Storage::updateSettings"));
     #endif

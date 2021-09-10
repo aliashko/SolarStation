@@ -28,19 +28,19 @@ GsmClient::GsmClient(
 		#ifndef SIM800L_INTERNAL_DEBUG 
 		_sim800 = new SIM800L((Stream *)_simSerial, _resetPin, 150, _httpResponseBuffer);
 		#else
-		_sim800 = new SIM800L((Stream *)_simSerial, _resetPin, 200, _httpResponseBuffer, (Stream *)&Serial);
+		_sim800 = new SIM800L((Stream *)_simSerial, _resetPin, 150, _httpResponseBuffer, (Stream *)&Serial);
 		#endif
 }
 bool GsmClient::connect(){
 	for(int i=0; i<2;i++){
 		bool powerMode = _sim800->setPowerMode(NORMAL);
+		if(powerMode)break;
 		#ifdef GSM_DEBUG 
 		if(powerMode) {
 			Serial.println(F("Module in normal power mode"));
 		} else {
 			Serial.println(F("Failed to switch module to normal power mode"));
 		}
-		//Serial.println((int)_sim800->getPowerMode());
 		#endif
 	}
 
@@ -60,7 +60,6 @@ bool GsmClient::connectInternal(){
 	#endif
 
 	safeDelay(_initializationDelay);
-	Watchdog.reset();
 
 	// Wait until the module is ready to accept AT commands
 	for(uint8_t i = 0; !_sim800->isReady(); i++) {
@@ -189,7 +188,7 @@ bool GsmClient::sendRequest(const char* verb, const char* url, char* body, int t
 	#endif
 
 	// Do HTTP communication
-	if(strcmp(verb, "GET") == 0)*httpCode = _sim800->doGet(url, timeout);
+	if(strcmp(verb, "GET") == 0)/**httpCode = _sim800->doGet(url, timeout)*/;
 	else *httpCode = _sim800->doPost(url, POST_CONTENT_TYPE, body, timeout, timeout);
 
 	if(*httpCode == 200) {

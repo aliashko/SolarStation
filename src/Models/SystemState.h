@@ -13,5 +13,5 @@ struct SystemState {
     SystemPowerMode powerMode;
 
     unsigned long restartsCount;
-    unsigned int gsmErrors;
+    unsigned long gsmErrors;
 };

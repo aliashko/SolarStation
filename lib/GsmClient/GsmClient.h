@@ -5,10 +5,8 @@
 
 // Set serial for debug console (to the Serial Monitor)
 //#define GSM_DEBUG
-#ifdef GSM_DEBUG
-    #define GSM_SERIAL_MONITOR Serial
-    //#define SIM800L_INTERNAL_DEBUG
-#endif
+//#define GSM_SERIAL_MONITOR Serial
+//#define SIM800L_INTERNAL_DEBUG
 
 class GsmClient
 {
@@ -27,7 +25,7 @@ public:
     void reset();
 
     bool sendRequest(const char* verb, const char* url, char* body, int timeout, char* response, int* httpCode);       
-    int currentSignalLevel = -1;
+    int currentSignalLevel = 0;
 private:
     bool _isConnected = false;
 

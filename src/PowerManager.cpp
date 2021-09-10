@@ -6,10 +6,11 @@
 //#define DEBUG
 
 PowerManager::PowerManager(){
+    power.autoCalibrate();
     pinMode(SENSORS_POWER_CONTROL_PIN, OUTPUT);
-    changeSensorsPower(isSensorsEnabled);
+    digitalWrite(SENSORS_POWER_CONTROL_PIN, isSensorsEnabled);
     pinMode(SIM800_POWER_CONTROL_PIN, OUTPUT);
-    changeGsmPower(isGsmEnabled);
+    digitalWrite(SIM800_POWER_CONTROL_PIN, isGsmEnabled);
 }
 
 void PowerManager::deepSleep(int seconds){//seconds=1;
@@ -17,15 +18,17 @@ void PowerManager::deepSleep(int seconds){//seconds=1;
     Serial.print("PowerManager::deepSleep ");Serial.println(seconds);
     #endif
 
-    safeDelay(1000 * (seconds));
+    safeDelay(1000 * (uint32_t)seconds);
 }
 
-void PowerManager::safeDelay(unsigned int ms){
-	for(unsigned int i = 0; i < ms; i += 1000){
+void PowerManager::safeDelay(uint32_t ms){
+    for(int i = 0; i < 50; i++)delay(10);
+	for(uint32_t i = 0; i < ms; i += 1000){
         power.sleepDelay(ms - i > 1000 ? 1000 : (ms - i));
-        //delay(ms - i > 1000 ? 1000 : (ms - i));
+        //delay((ms - i) > 1000 ? 1000 : (ms - i));
 		Watchdog.reset();
 	}
+    for(int i = 0; i < 50; i++)delay(10);
 }
 
 void PowerManager::wakeUp(){

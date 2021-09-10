@@ -9,9 +9,10 @@ public:
     WebClient();
     bool connect();
     bool disconnect();
+    void resetDevice();
     bool postData(PostData data, GetData* gdata);
 
-    uint8_t lastSignalLevel;
+    uint8_t lastSignalLevel = 0;
 
 private:
     GsmClient* _gsm;

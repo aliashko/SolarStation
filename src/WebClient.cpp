@@ -25,11 +25,16 @@ bool WebClient::disconnect(){
     return true;
 }
 
+void WebClient::resetDevice(){
+    _gsm->reset();
+    Watchdog.reset();
+}
+
 bool WebClient::postData(PostData data, GetData* gdata){
     BackendClientConfig config;
     char response[HTTP_RESPONSE_BUFFER]; int httpCode;
 
-    char request[150];char buf[12];
+    char request[140];char buf[12];
     request[0] = '\0';
 
     strcat(request,"{");
@@ -40,17 +45,16 @@ bool WebClient::postData(PostData data, GetData* gdata){
     utoa(data.soilMoistureLevel,buf,10);jsonConcat(request, "sm", buf);
     utoa(data.gsmSignalLevel,buf,10);jsonConcat(request, "gl", buf);
     itoa((int)(data.solarVoltage*100),buf,10);jsonConcat(request, "sv", buf);
-    itoa((int)(data.solarCurrent*100),buf,10);jsonConcat(request, "sc", buf);
+    ltoa((long)(data.solarCurrent*10),buf,10);jsonConcat(request, "sc", buf);
     itoa((int)(data.batteryVoltage*100),buf,10);jsonConcat(request, "bv", buf);
     itoa((int)(data.arduinoVoltage*100),buf,10);jsonConcat(request, "av", buf);
     itoa((int)(data.gsmVoltage*100),buf,10);jsonConcat(request, "gv", buf);
     utoa(data.powerMode,buf,10);jsonConcat(request, "pm", buf);
     ultoa(data.restartsCount,buf,10);jsonConcat(request, "rc", buf);
-    utoa(data.gsmErrors,buf,10);jsonConcat(request, "ge", buf);
+    ultoa(data.gsmErrors,buf,10);jsonConcat(request, "ge", buf);
     strcat(request,"}");
 
     if(!_gsm->sendRequest("POST", config.PostDataEndpoint, request, config.PostDataTimeout, response, &httpCode)) {
-        //delete[] response;
         Watchdog.reset();
         return false;
     }
@@ -59,6 +63,7 @@ bool WebClient::postData(PostData data, GetData* gdata){
     intValue = readIntJsonField(response, "lsd:");if(intValue != -1)gdata->lightTimeSleepDurationSeconds = intValue;
     intValue = readIntJsonField(response, "dsd:");if(intValue != -1)gdata->darkTimeSleepDurationSeconds = intValue;
     intValue = readIntJsonField(response, "sdf:");if(intValue != -1)gdata->sendDataFrequency = intValue;
+    intValue = readIntJsonField(response, "rsc:");if(intValue != -1)gdata->resetSendDataCounterAfterFailure = (intValue == 1);
 
     floatValue = readFloatJsonField(response, "smv:");if(floatValue != -1)gdata->safeModeVoltage = floatValue;
     floatValue = readFloatJsonField(response, "emv:");if(floatValue != -1)gdata->economyModeVoltage = floatValue;
@@ -68,8 +73,6 @@ bool WebClient::postData(PostData data, GetData* gdata){
     intValue = readIntJsonField(response, "ver:");if(intValue != -1)gdata->version = intValue;
     Watchdog.reset();
 
-    //delete[] response;
-    Watchdog.reset();
     return true;
 }
 

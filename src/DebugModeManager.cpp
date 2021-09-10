@@ -36,6 +36,6 @@ void DebugModeManager::yellowLedMode(bool turnOn){
 
 void DebugModeManager::blinkAllLeds(){
     redLedMode(true);greenLedMode(true);blueLedMode(true);yellowLedMode(true);
-    delay(1000);
+    delay(2000);
     redLedMode(false);greenLedMode(false);blueLedMode(false);yellowLedMode(false);
 }

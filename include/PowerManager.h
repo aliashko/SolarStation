@@ -15,5 +15,5 @@ public:
     bool isGsmEnabled = false;
 
 private:
-    void safeDelay(unsigned int ms);
+    void safeDelay(uint32_t ms);
 };

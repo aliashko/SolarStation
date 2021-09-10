@@ -1,11 +1,12 @@
 #pragma once
 #include <Arduino.h>
 
-const unsigned int SENSORS_WARMUP_DELAY_MS = 1000;
+const unsigned int SENSORS_WARMUP_DELAY_MS = 200;
 const unsigned int GSM_WARMUP_DELAY_MS = 1000;
 const unsigned int GSM_INITIALIZATION_DELAY_MS = 6000;
 const unsigned int GSM_OPERATIONS_DELAY_MS = 1000;
-const unsigned int POWER_SWITCH_STABILIZATION_DELAY = 1000;
+const unsigned int POWER_SWITCH_STABILIZATION_DELAY = 2000;
+const unsigned int SAFE_MODE_SLEEP_DURATION = 300;
 
 const unsigned int HTTP_RESPONSE_BUFFER = 90;
 
@@ -35,11 +36,8 @@ struct GsmConfiguration {
 // VOLTAGE SENSORS SETTINGS
 const uint8_t BATTERY_VOLTAGE_PIN = A2;
 const uint8_t ARDUINO_VOLTAGE_PIN = A3;
-const unsigned long BATTERY_VOLTMETER_R1 = (long)18950 + (long)9550
-const unsigned long BATTERY_VOLTMETER_R2 = 9990;
-const unsigned long ARDUINO_VOLTMETER_R1 = (long)19280 + (long)9750
-const unsigned long ARDUINO_VOLTMETER_R2 = 9850
-const unsigned int REF_RESISTOR = 977;
+const float BATTERY_VOLTMETER_RATIO = 0.0856;
+const float ARDUINO_VOLTMETER_RATIO = 0.0878;
 
 // BUTTONS
 const uint8_t DEBUG_BUTTON_PIN = 2;

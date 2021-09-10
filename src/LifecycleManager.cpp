@@ -16,38 +16,37 @@ LifecycleManager::LifecycleManager() {
 }
 
 void LifecycleManager::initialize(){
-    #ifdef DEBUG
-    Serial.println("LifecycleManager::initialize");
-    #endif
     DebugModeManager::initializeHardware();
 
-    _settings = _storage->getSettings();
     _systemState = SystemState{
         .timestamp = 0,
         .isDebugMode = DebugModeManager::checkIfDebugModeRequested(),
-        .powerMode = SystemPowerMode::Safe
+        .powerMode = SystemPowerMode::Safe,
+        .restartsCount = 0,
+        .gsmErrors = 0
     };
-    _systemState.gsmErrors = 0;
+
+    if(_systemState.isDebugMode)DebugModeManager::blinkAllLeds();
+    if(DebugModeManager::checkIfDebugModeRequested())_settings = _storage->getDefaultSettings();
+    else _settings = _storage->getSettings();
 
     if(_settings._integrityControlKey == SETTINGS_INTEGRITY_CONTROL_KEY_VALUE){
         _systemState.restartsCount = _storage->getRestartsCount();
     }
     else {
         #ifdef DEBUG
-        Serial.print(">>> settings INTEGRITY mismatch ");Serial.println(_settings._integrityControlKey);
+        Serial.print(F(">>> settings INTEGRITY mismatch "));Serial.println(_settings._integrityControlKey);
         #endif
-        _systemState.restartsCount = 0;
         _settings._integrityControlKey = SETTINGS_INTEGRITY_CONTROL_KEY_VALUE;
         _storage->updateSettings(_settings);
     }
 
-    if(_systemState.isDebugMode)DebugModeManager::blinkAllLeds();
-    else _storage->updateRestartsCount(_systemState.restartsCount + 1);
+    if(!_systemState.isDebugMode)_storage->updateRestartsCount(_systemState.restartsCount + 1);
 }
 
 void LifecycleManager::iterate() {
     #ifdef DEBUG
-    Serial.println("LifecycleManager::iterate");
+    Serial.println(F("LifecycleManager::iterate"));
     #endif
     _sendDataIterationCounter++;
 
@@ -73,16 +72,16 @@ void LifecycleManager::iterate() {
 
 void LifecycleManager::measure(){
     #ifdef DEBUG
-    Serial.println("LifecycleManager::measure");
+    Serial.println(F("LifecycleManager::measure"));
     #endif
     if(_systemState.isDebugMode) DebugModeManager::greenLedMode(true);
     _powerManager->changeSensorsPower(true);
-    safeDelay(SENSORS_WARMUP_DELAY_MS);
     Watchdog.reset();
 
     _sensors->connect();
 
     _currentWeather = _sensors->getWeather();
+    Watchdog.reset();
     _currentPowerLevels = _sensors->getPowerLevels();
   
     _powerManager->changeSensorsPower(false);
@@ -91,7 +90,7 @@ void LifecycleManager::measure(){
 
 void LifecycleManager::measureForSafeMode(){
     #ifdef DEBUG
-    Serial.println("LifecycleManager::measureForSafeMode");
+    Serial.println(F("LifecycleManager::measureForSafeMode"));
     #endif
 
     _currentPowerLevels = _sensors->getPowerLevels(true);
@@ -99,10 +98,10 @@ void LifecycleManager::measureForSafeMode(){
 
 void LifecycleManager::sendData(){
     #ifdef DEBUG
-    Serial.println("LifecycleManager::sendData");
+    Serial.println(F("LifecycleManager::sendData"));
     #endif
 
-    if(_systemState.isDebugMode){ DebugModeManager::greenLedMode(true);DebugModeManager::blueLedMode(true);}
+    if(_systemState.isDebugMode)DebugModeManager::blueLedMode(true);
     _powerManager->changeGsmPower(true);
     delay(GSM_WARMUP_DELAY_MS);
 
@@ -126,27 +125,67 @@ void LifecycleManager::sendData(){
         .restartsCount = _systemState.restartsCount,
         .gsmErrors = _systemState.gsmErrors
     };
-    if(!_webClient->connect())_systemState.gsmErrors++;
+    if(!_webClient->connect()){
+        #ifdef DEBUG
+        Serial.println(F("sendData connection error"));
+        #endif
+        _systemState.gsmErrors++;
+        if(_settings.resetSendDataCounterAfterFailure || _systemState.powerMode == SystemPowerMode::Economy)_sendDataIterationCounter = 0;
+    }
     else {
+        #ifdef DEBUG
+        Serial.println(F("sendData connection success"));
+        #endif
+        data.gsmSignalLevel = _webClient->lastSignalLevel;
+
         GetData gdata;
-        if(!_webClient->postData(data, &gdata))_systemState.gsmErrors++;
-        
-        if(gdata.version != _settings._version){
-            _settings.lightTimeSleepDurationSeconds = gdata.lightTimeSleepDurationSeconds;
-            _settings.darkTimeSleepDurationSeconds = gdata.darkTimeSleepDurationSeconds;
-            _settings.sendDataFrequency = gdata.sendDataFrequency;
-            _settings.safeModeVoltage = gdata.safeModeVoltage;
-            _settings.economyModeVoltage = gdata.economyModeVoltage;
-            _settings._version = gdata.version;
-            _storage->updateSettings(_settings);
+        if(!_webClient->postData(data, &gdata)){
+            #ifdef DEBUG
+            Serial.println(F("sendData post error"));
+            #endif
+            _systemState.gsmErrors++;
+            _webClient->resetDevice();
+            safeDelay(GSM_OPERATIONS_DELAY_MS);
+            if(_settings.resetSendDataCounterAfterFailure)_sendDataIterationCounter = 0;
+        }
+        else {
+            #ifdef DEBUG
+            Serial.println(F("sendData post success"));
+            #endif
+            Settings newSettings = {
+                .lightTimeSleepDurationSeconds = gdata.lightTimeSleepDurationSeconds,
+                .darkTimeSleepDurationSeconds = gdata.darkTimeSleepDurationSeconds,
+                .sendDataFrequency = gdata.sendDataFrequency,
+                .resetSendDataCounterAfterFailure = gdata.resetSendDataCounterAfterFailure,
+
+                .safeModeVoltage = gdata.safeModeVoltage,
+                .economyModeVoltage = gdata.economyModeVoltage,
+                .economyModeDataSendSkipMultiplier = gdata.economyModeDataSendSkipMultiplier,
+                .solarVoltageForLightTime = gdata.solarVoltageForLightTime,
+
+                ._version = gdata.version,
+                ._integrityControlKey = _settings._integrityControlKey
+            };
+
+            if(newSettings._version != _settings._version){
+                if(isSettingsValid(newSettings)){
+                    _settings = newSettings;
+                    _storage->updateSettings(_settings);
+                }
+                else {
+                    #ifdef DEBUG
+                    Serial.println("newSettings is invalid");
+                    #endif
+                }
+            }
+            _sendDataIterationCounter = 0;
         }
 
-        _sendDataIterationCounter = 0;
         _webClient->disconnect();
     }
 
     _powerManager->changeGsmPower(false);
-    if(_systemState.isDebugMode){ DebugModeManager::greenLedMode(false);DebugModeManager::blueLedMode(false);}
+    if(_systemState.isDebugMode)DebugModeManager::blueLedMode(false);
 }
 
 void LifecycleManager::updateSystemState(){    
@@ -157,7 +196,7 @@ void LifecycleManager::updateSystemState(){
     else _systemState.powerMode = SystemPowerMode::Powerfull;
 
     #ifdef DEBUG
-    Serial.print("LifecycleManager::updateSystemState powerMode=");Serial.println((int)_systemState.powerMode);
+    Serial.print(F("updateSystemState powerMode="));Serial.println((int)_systemState.powerMode);
     #endif
 
     if(_systemState.isDebugMode){
@@ -168,6 +207,11 @@ void LifecycleManager::updateSystemState(){
 }
 
 void LifecycleManager::sleep(){
+    if(_systemState.powerMode == SystemPowerMode::Safe){
+        _powerManager->deepSleep(SAFE_MODE_SLEEP_DURATION);
+        return;
+    }
+
     if(_currentPowerLevels.solarVoltage >= _settings.solarVoltageForLightTime){
         _powerManager->deepSleep(_settings.lightTimeSleepDurationSeconds);
     }

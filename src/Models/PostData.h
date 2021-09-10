@@ -18,5 +18,5 @@ struct PostData {
     uint8_t powerMode;
 
     unsigned long restartsCount;
-    unsigned int gsmErrors;
+    unsigned long gsmErrors;
 };
