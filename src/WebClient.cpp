@@ -10,6 +10,8 @@ WebClient::WebClient(){
         GSM_INITIALIZATION_DELAY_MS,
         GSM_OPERATIONS_DELAY_MS,
         HTTP_RESPONSE_BUFFER);
+        
+    sleepMode(true);
 }
 
 bool WebClient::connect(){
@@ -27,6 +29,11 @@ bool WebClient::disconnect(){
 
 void WebClient::resetDevice(){
     _gsm->reset();
+    Watchdog.reset();
+}
+
+void WebClient::sleepMode(bool sleepModeOn){
+    _gsm->sleepMode(sleepModeOn);
     Watchdog.reset();
 }
 

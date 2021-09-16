@@ -10,5 +10,6 @@ public:
     static void greenLedMode(bool turnOn);
     static void blueLedMode(bool turnOn);
     static void yellowLedMode(bool turnOn);
+    static void blinkRedLed();
     static void blinkAllLeds();    
 };

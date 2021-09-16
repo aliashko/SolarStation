@@ -29,21 +29,11 @@ GsmClient::GsmClient(
 		_sim800 = new SIM800L((Stream *)_simSerial, _resetPin, 150, _httpResponseBuffer);
 		#else
 		_sim800 = new SIM800L((Stream *)_simSerial, _resetPin, 150, _httpResponseBuffer, (Stream *)&Serial);
-		#endif
+		#endif		
 }
 bool GsmClient::connect(){
-	for(int i=0; i<2;i++){
-		bool powerMode = _sim800->setPowerMode(NORMAL);
-		if(powerMode)break;
-		#ifdef GSM_DEBUG 
-		if(powerMode) {
-			Serial.println(F("Module in normal power mode"));
-		} else {
-			Serial.println(F("Failed to switch module to normal power mode"));
-		}
-		#endif
-	}
-
+	sleepMode(false);
+	_sim800->setBaudRate(9600);
 	for(int i=0;i<MAX_CONNECTION_RETRY_COUNT;i++){
 		if(connectInternal())return true;
 		reset();
@@ -137,14 +127,7 @@ void GsmClient::disconnect(){
 	#endif
 
 	// Go into low power mode
-	bool lowPowerMode = _sim800->setPowerMode(SLEEP);
-	#ifdef GSM_DEBUG 
-	if(lowPowerMode) {
-		Serial.println(F("Module in low power mode"));
-	} else {
-		Serial.println(F("Failed to switch module to low power mode"));
-	}
-	#endif
+	sleepMode(true);
 
 	_isConnected = !disconnected;
 }
@@ -154,6 +137,50 @@ void GsmClient::reset(){
 	GSM_SERIAL_MONITOR.println("reset...");
 	#endif
 	_sim800->reset();
+}
+
+void GsmClient::sleepMode(bool sleepModeOn){
+	if(sleepModeOn){
+		powerModeInternal(true);
+		sleepModeInternal(true);
+	}
+	else {
+		//_sim800->reset();
+		//safeDelay(_operationsDelay);
+		sleepModeInternal(false);
+		safeDelay(_operationsDelay);
+		powerModeInternal(false);
+		safeDelay(_operationsDelay);
+	}
+}
+
+void GsmClient::powerModeInternal(bool lowPowerMode){
+	for(int i=0; i<2;i++){
+		bool powerMode = _sim800->setPowerMode(lowPowerMode ? SLEEP : NORMAL);		
+		#ifdef GSM_DEBUG 
+		if(powerMode) {
+			Serial.print(F("Power mode isLow="));Serial.println(lowPowerMode);
+		} else {
+			Serial.print(F("Failed to switch power mode to isLow="));Serial.println(lowPowerMode);
+		}
+		#endif
+		delay(100);
+		if(powerMode)break;
+	}
+}
+void GsmClient::sleepModeInternal(bool sleepModeOn){
+	for(int i=0; i<2;i++){
+		bool sleepMode = _sim800->setSleepMode(sleepModeOn);		
+		#ifdef GSM_DEBUG 
+		if(sleepMode) {
+			Serial.print(F("Sleep mode turned to "));Serial.println(sleepModeOn);
+		} else {
+			Serial.print(F("Failed to switch sleep mode to "));Serial.println(sleepModeOn);
+		}
+		#endif
+		delay(100);
+		if(sleepMode)break;
+	}
 }
 
 bool GsmClient::sendRequest(const char* verb, const char* url, char* body, int timeout, char* response, int* httpCode){

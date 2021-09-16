@@ -6,7 +6,10 @@
 extern void safeDelay(unsigned int ms);
 //#define DEBUG
 
-LifecycleManager::LifecycleManager() {
+LifecycleManager::LifecycleManager() {    
+    DebugModeManager::initializeHardware();
+    DebugModeManager::blinkRedLed();
+
     _powerManager = new PowerManager();
     _storage = new Storage();
     _sensors = new Sensors();
@@ -16,8 +19,6 @@ LifecycleManager::LifecycleManager() {
 }
 
 void LifecycleManager::initialize(){
-    DebugModeManager::initializeHardware();
-
     _systemState = SystemState{
         .timestamp = 0,
         .isDebugMode = DebugModeManager::checkIfDebugModeRequested(),
@@ -27,7 +28,12 @@ void LifecycleManager::initialize(){
     };
 
     if(_systemState.isDebugMode)DebugModeManager::blinkAllLeds();
-    if(DebugModeManager::checkIfDebugModeRequested())_settings = _storage->getDefaultSettings();
+    else DebugModeManager::blinkRedLed();
+    if(DebugModeManager::checkIfDebugModeRequested()){
+        _settings = _storage->getDefaultSettings();
+        _storage->updateRestartsCount(0);
+        DebugModeManager::blinkRedLed();DebugModeManager::blinkRedLed();
+    }
     else _settings = _storage->getSettings();
 
     if(_settings._integrityControlKey == SETTINGS_INTEGRITY_CONTROL_KEY_VALUE){
@@ -131,6 +137,7 @@ void LifecycleManager::sendData(){
         #endif
         _systemState.gsmErrors++;
         if(_settings.resetSendDataCounterAfterFailure || _systemState.powerMode == SystemPowerMode::Economy)_sendDataIterationCounter = 0;
+        _webClient->sleepMode(true);
     }
     else {
         #ifdef DEBUG

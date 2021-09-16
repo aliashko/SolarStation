@@ -28,8 +28,8 @@ void setup() {
    Serial.begin(9600);
    Serial.println("START");
    #endif
-   Watchdog.enable(RESET_MODE, WDT_PRESCALER_1024);
    lifecycleManager = new LifecycleManager();
+   Watchdog.enable(RESET_MODE, WDT_PRESCALER_1024);
 }
 
 void loop() {  

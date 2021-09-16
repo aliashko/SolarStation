@@ -10,6 +10,7 @@ public:
     bool connect();
     bool disconnect();
     void resetDevice();
+    void sleepMode(bool sleepModeOn);
     bool postData(PostData data, GetData* gdata);
 
     uint8_t lastSignalLevel = 0;

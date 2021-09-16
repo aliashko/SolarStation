@@ -23,6 +23,7 @@ public:
     bool connect();
     void disconnect();
     void reset();
+    void sleepMode(bool sleepModeOn);
 
     bool sendRequest(const char* verb, const char* url, char* body, int timeout, char* response, int* httpCode);       
     int currentSignalLevel = 0;
@@ -41,4 +42,6 @@ private:
     SIM800L* _sim800;
 
     bool connectInternal();
+    void powerModeInternal(bool lowPowerMode);
+    void sleepModeInternal(bool sleepModeOn);
 };

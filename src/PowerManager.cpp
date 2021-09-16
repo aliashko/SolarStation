@@ -13,12 +13,13 @@ PowerManager::PowerManager(){
     digitalWrite(SIM800_POWER_CONTROL_PIN, isGsmEnabled);
 }
 
-void PowerManager::deepSleep(int seconds){//seconds=1;
+void PowerManager::deepSleep(int seconds){//seconds=10;
     #ifdef DEBUG
     Serial.print("PowerManager::deepSleep ");Serial.println(seconds);
     #endif
 
     safeDelay(1000 * (uint32_t)seconds);
+    Watchdog.enable(RESET_MODE, WDT_PRESCALER_1024);
 }
 
 void PowerManager::safeDelay(uint32_t ms){
