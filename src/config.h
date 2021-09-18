@@ -36,8 +36,8 @@ struct GsmConfiguration {
 // VOLTAGE SENSORS SETTINGS
 const uint8_t BATTERY_VOLTAGE_PIN = A2;
 const uint8_t ARDUINO_VOLTAGE_PIN = A3;
-const float BATTERY_VOLTMETER_RATIO = 0.0834;
-const float ARDUINO_VOLTMETER_RATIO = 0.0855;
+const double BATTERY_VOLTMETER_RATIO = 0.0826;//0.0834 - measurement attempt 2 result
+const double ARDUINO_VOLTMETER_RATIO = 0.0844;//0.0855 - measurement attempt 2 result
 
 // BUTTONS
 const uint8_t DEBUG_BUTTON_PIN = 2;

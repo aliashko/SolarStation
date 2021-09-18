@@ -32,7 +32,7 @@ void LifecycleManager::initialize(){
     if(DebugModeManager::checkIfDebugModeRequested()){
         _settings = _storage->getDefaultSettings();
         _storage->updateRestartsCount(0);
-        DebugModeManager::blinkRedLed();DebugModeManager::blinkRedLed();
+        delay(500);DebugModeManager::blinkRedLed();delay(500);DebugModeManager::blinkRedLed();
     }
     else _settings = _storage->getSettings();
 
