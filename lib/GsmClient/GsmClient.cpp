@@ -65,6 +65,7 @@ bool GsmClient::connectInternal(){
 	#endif
 
 	// Wait for the GSM signal
+	currentSignalLevel = -1;
 	currentSignalLevel = _sim800->getSignal();
 	for(uint8_t i = 0; currentSignalLevel <= 0; i++) {
 		safeDelay(_operationsDelay);

@@ -50,7 +50,7 @@ bool WebClient::postData(PostData data, GetData* gdata){
     itoa((int)(data.humidity*10),buf,10);jsonConcat(request, "h", buf);
     utoa(data.raindropLevel,buf,10);jsonConcat(request, "r", buf);
     utoa(data.soilMoistureLevel,buf,10);jsonConcat(request, "sm", buf);
-    utoa(data.gsmSignalLevel,buf,10);jsonConcat(request, "gl", buf);
+    itoa(data.gsmSignalLevel,buf,10);jsonConcat(request, "gl", buf);
     itoa((int)(data.solarVoltage*100),buf,10);jsonConcat(request, "sv", buf);
     ltoa((long)(data.solarCurrent*10),buf,10);jsonConcat(request, "sc", buf);
     itoa((int)(data.batteryVoltage*100),buf,10);jsonConcat(request, "bv", buf);

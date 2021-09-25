@@ -34,8 +34,16 @@ void DebugModeManager::yellowLedMode(bool turnOn){
     digitalWrite(YELLOW_LED_PIN, turnOn);
 }
 
-void DebugModeManager::blinkRedLed(){
-    redLedMode(true);delay(500);redLedMode(false);
+void DebugModeManager::blinkRedLed(uint8_t count){
+    for(uint8_t i = 0; i<count; i++){
+        redLedMode(true);delay(500);redLedMode(false);delay(500);
+    }
+}
+
+void DebugModeManager::blinkRedBlueLed(uint8_t count){
+    for(uint8_t i = 0; i<count; i++){
+        redLedMode(true);blueLedMode(true);delay(500);redLedMode(false);blueLedMode(false);delay(500);
+    }
 }
 
 void DebugModeManager::blinkAllLeds(){

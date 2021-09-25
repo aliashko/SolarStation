@@ -26,7 +26,7 @@ public:
     void sleepMode(bool sleepModeOn);
 
     bool sendRequest(const char* verb, const char* url, char* body, int timeout, char* response, int* httpCode);       
-    int currentSignalLevel = 0;
+    int currentSignalLevel = -1;
 private:
     bool _isConnected = false;
 

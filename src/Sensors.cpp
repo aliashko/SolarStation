@@ -2,6 +2,7 @@
 #include "config.h"
 
 //#define DEBUG
+extern void safeDelay(unsigned int ms);
 
 Sensors::Sensors(){
     _dht = new SimpleDHT22(DHT22_PIN);
@@ -36,7 +37,7 @@ Weather Sensors::getWeather(){
     }
 
     analogReference(DEFAULT);
-    delay(SENSORS_WARMUP_DELAY_MS);
+    safeDelay(SENSORS_WARMUP_DELAY_MS);
     data.raindropLevel = 1023 - (int)getDataFromAnalogPin(RAINDROP_PIN);
     data.soilMoistureLevel = 1023 - (int)getDataFromAnalogPin(SOIL_PIN);
     
@@ -55,7 +56,7 @@ PowerLevels Sensors::getPowerLevels(bool useOnlyBuiltinSensors){
     float aref = 1.1;
     
     analogReference(INTERNAL);
-    delay(SENSORS_WARMUP_DELAY_MS);
+    safeDelay(SENSORS_WARMUP_DELAY_MS);
 
     data.arduinoVoltage = getVoltageFromAnalogPin(ARDUINO_VOLTAGE_PIN, ARDUINO_VOLTMETER_RATIO, aref);
     data.batteryVoltage = getVoltageFromAnalogPin(BATTERY_VOLTAGE_PIN, BATTERY_VOLTMETER_RATIO, aref);

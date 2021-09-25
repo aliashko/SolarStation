@@ -1,7 +1,7 @@
 #pragma once
 #include <Arduino.h>
 
-const unsigned int SENSORS_WARMUP_DELAY_MS = 200;
+const unsigned int SENSORS_WARMUP_DELAY_MS = 3000;
 const unsigned int GSM_WARMUP_DELAY_MS = 1000;
 const unsigned int GSM_INITIALIZATION_DELAY_MS = 6000;
 const unsigned int GSM_OPERATIONS_DELAY_MS = 1000;

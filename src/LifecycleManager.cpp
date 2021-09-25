@@ -32,7 +32,7 @@ void LifecycleManager::initialize(){
     if(DebugModeManager::checkIfDebugModeRequested()){
         _settings = _storage->getDefaultSettings();
         _storage->updateRestartsCount(0);
-        delay(500);DebugModeManager::blinkRedLed();delay(500);DebugModeManager::blinkRedLed();
+        DebugModeManager::blinkRedLed(2);
     }
     else _settings = _storage->getSettings();
 
@@ -86,9 +86,9 @@ void LifecycleManager::measure(){
 
     _sensors->connect();
 
-    _currentWeather = _sensors->getWeather();
-    Watchdog.reset();
     _currentPowerLevels = _sensors->getPowerLevels();
+    Watchdog.reset();
+    _currentWeather = _sensors->getWeather();
   
     _powerManager->changeSensorsPower(false);
     if(_systemState.isDebugMode) DebugModeManager::greenLedMode(false);
@@ -137,6 +137,12 @@ void LifecycleManager::sendData(){
         #endif
         _systemState.gsmErrors++;
         if(_settings.resetSendDataCounterAfterFailure || _systemState.powerMode == SystemPowerMode::Economy)_sendDataIterationCounter = 0;
+        if(_systemState.isDebugMode){
+            if(_webClient->lastSignalLevel == -1)DebugModeManager::blinkRedBlueLed(3);
+            else if(_webClient->lastSignalLevel == 0)DebugModeManager::blinkRedBlueLed(5);
+            else DebugModeManager::blinkRedLed(3);
+            Watchdog.reset();
+        }
         _webClient->sleepMode(true);
     }
     else {
@@ -152,8 +158,10 @@ void LifecycleManager::sendData(){
             #endif
             _systemState.gsmErrors++;
             _webClient->resetDevice();
+            Watchdog.reset();
             safeDelay(GSM_OPERATIONS_DELAY_MS);
             if(_settings.resetSendDataCounterAfterFailure)_sendDataIterationCounter = 0;
+            if(_systemState.isDebugMode){DebugModeManager::blinkRedLed(5);Watchdog.reset();}
         }
         else {
             #ifdef DEBUG

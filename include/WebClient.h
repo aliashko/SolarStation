@@ -13,7 +13,7 @@ public:
     void sleepMode(bool sleepModeOn);
     bool postData(PostData data, GetData* gdata);
 
-    uint8_t lastSignalLevel = 0;
+    int lastSignalLevel = -1;
 
 private:
     GsmClient* _gsm;
