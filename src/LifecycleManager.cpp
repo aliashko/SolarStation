@@ -111,26 +111,6 @@ void LifecycleManager::sendData(){
     _powerManager->changeGsmPower(true);
     delay(GSM_WARMUP_DELAY_MS);
 
-    PostData data = {
-        .timestamp = _systemState.timestamp,
-
-        .temperature = _currentWeather.temperature,
-        .humidity = _currentWeather.humidity,
-        .raindropLevel = _currentWeather.raindropLevel,
-        .soilMoistureLevel = _currentWeather.soilMoistureLevel,
-
-        .gsmSignalLevel = _webClient->lastSignalLevel,
-
-        .solarVoltage = _currentPowerLevels.solarVoltage,
-        .solarCurrent = _currentPowerLevels.solarCurrent,
-        .batteryVoltage = _currentPowerLevels.batteryVoltage,
-        .arduinoVoltage = _currentPowerLevels.arduinoVoltage,
-        .gsmVoltage = _currentPowerLevels.gsmVoltage,
-
-        .powerMode = (uint8_t)_systemState.powerMode,
-        .restartsCount = _systemState.restartsCount,
-        .gsmErrors = _systemState.gsmErrors
-    };
     if(!_webClient->connect()){
         #ifdef DEBUG
         Serial.println(F("sendData connection error"));
@@ -149,7 +129,34 @@ void LifecycleManager::sendData(){
         #ifdef DEBUG
         Serial.println(F("sendData connection success"));
         #endif
-        data.gsmSignalLevel = _webClient->lastSignalLevel;
+        PostData data = {
+            .timestamp = _systemState.timestamp,
+
+            .temperature = _currentWeather.temperature,
+            .humidity = _currentWeather.humidity,
+            .raindropLevel = _currentWeather.raindropLevel,
+            .soilMoistureLevel = _currentWeather.soilMoistureLevel,
+
+            .gsmSignalLevel = _webClient->lastSignalLevel,
+
+            .solarVoltage = _currentPowerLevels.solarVoltage,
+            .solarCurrent = _currentPowerLevels.solarCurrent,
+            .batteryVoltage = _currentPowerLevels.batteryVoltage,
+            .arduinoVoltage = _currentPowerLevels.arduinoVoltage,
+            .gsmVoltage = _webClient->lastSIMVoltage,
+            .powerMode = (uint8_t)_systemState.powerMode,
+
+            .simMoneyBalance = -1,
+
+            .restartsCount = _systemState.restartsCount,
+            .gsmErrors = _systemState.gsmErrors
+        };
+
+        if(_systemState.powerMode == SystemPowerMode::Powerfull && _sendSupplementDataIterationCounter >= _settings.sendSupplementalDataFrequency){
+            data.simMoneyBalance = _webClient->getBalance();
+            _sendSupplementDataIterationCounter = 0;
+            Watchdog.reset();
+        }
 
         GetData gdata;
         if(!_webClient->postData(data, &gdata)){
@@ -171,6 +178,7 @@ void LifecycleManager::sendData(){
                 .lightTimeSleepDurationSeconds = gdata.lightTimeSleepDurationSeconds,
                 .darkTimeSleepDurationSeconds = gdata.darkTimeSleepDurationSeconds,
                 .sendDataFrequency = gdata.sendDataFrequency,
+                .sendSupplementalDataFrequency = gdata.sendSupplementalDataFrequency,
                 .resetSendDataCounterAfterFailure = gdata.resetSendDataCounterAfterFailure,
 
                 .safeModeVoltage = gdata.safeModeVoltage,
@@ -193,7 +201,8 @@ void LifecycleManager::sendData(){
                     #endif
                 }
             }
-            _sendDataIterationCounter = 0;
+            _sendDataIterationCounter = 0;            
+            _sendSupplementDataIterationCounter++;
         }
 
         _webClient->disconnect();

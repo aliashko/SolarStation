@@ -33,7 +33,7 @@
 
 #include <Arduino.h>
 
-#define DEFAULT_TIMEOUT 5000
+#define DEFAULT_TIMEOUT 10000
 #define RESET_PIN_NOT_USED -1
 
 enum PowerMode {MINIMUM, NORMAL, POW_UNKNOWN, SLEEP, POW_ERROR};
@@ -60,14 +60,30 @@ class SIM800L {
     uint8_t getSignal();
     PowerMode getPowerMode();
     NetworkRegistration getRegistrationStatus();
+
     char* getVersion();
     char* getFirmware();
+
     char* getSimCardNumber();
     char* getSimStatus();
     char* getIP();
 
-    // Troubleshooting functions: enable echo mode
-    bool enableEchoMode();
+    char* getCurrentBand();
+    bool setBand(const char *band);
+    bool switchEdgeMode(bool enable);
+
+    char* ussdCommand(const char *number);
+    char* getLocalTime();
+
+    // Troubleshooting functions:
+    bool enableEchoMode(); //enable echo mode
+    bool enableVerboseErrors();
+    bool getOperatorsList();
+    bool scanAllNetwork();
+    bool getCurrentOperator();
+    bool setOperator(const char *operatorString);
+    float getPowerVoltage();
+    
 
     // Define PIN code to activate SIM card
     bool setPinCode(const char *pin);
@@ -101,9 +117,9 @@ class SIM800L {
     // Send comment from PROGMEM
     void sendCommand_P(const char* command);
     // Send command with parameter within quotes (template : command"parameter")
-    void sendCommand(const char* command, const char* parameter);
+    void sendCommand(const char* command, const char* parameter, bool addQuotes = true);
     // Send command with parameter within quotes from PROGMEM (template : command"parameter")
-    void sendCommand_P(const char* command, const char* parameter);
+    void sendCommand_P(const char* command, const char* parameter, bool addQuotes = true);
 
     // Read from module (timeout in millisec)
     bool readResponse(uint16_t timeout, uint8_t crlfToWait = 2);

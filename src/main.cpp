@@ -2,7 +2,7 @@
 #include <LifecycleManager.h>
 #include "GyverWDT.h"
 
-//#define DEBUG
+#define DEBUG
 
 LifecycleManager* lifecycleManager;
 #ifdef DEBUG

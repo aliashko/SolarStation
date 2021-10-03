@@ -1,7 +1,7 @@
 #include "Sensors.h"
 #include "config.h"
 
-//#define DEBUG
+#define DEBUG
 extern void safeDelay(unsigned int ms);
 
 Sensors::Sensors(){

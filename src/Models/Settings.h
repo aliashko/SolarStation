@@ -5,6 +5,7 @@ struct Settings {
   unsigned int lightTimeSleepDurationSeconds;
   unsigned int darkTimeSleepDurationSeconds;
   unsigned int sendDataFrequency;  
+  unsigned int sendSupplementalDataFrequency;
   bool resetSendDataCounterAfterFailure;
 
   float safeModeVoltage;
@@ -16,12 +17,13 @@ struct Settings {
   unsigned long _integrityControlKey;
 };
 
-const unsigned long SETTINGS_INTEGRITY_CONTROL_KEY_VALUE = 123456789;
+const unsigned long SETTINGS_INTEGRITY_CONTROL_KEY_VALUE = 123456799;
 
 const Settings DEFAULT_SETTINGS = {
   .lightTimeSleepDurationSeconds = 3 * 60,
   .darkTimeSleepDurationSeconds = 20 * 60,
   .sendDataFrequency = 1,
+  .sendSupplementalDataFrequency = 10,
   .resetSendDataCounterAfterFailure = false,
 
   .safeModeVoltage = 4.2,

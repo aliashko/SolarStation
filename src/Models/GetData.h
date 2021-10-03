@@ -4,6 +4,7 @@ struct GetData {
     unsigned int lightTimeSleepDurationSeconds;
     unsigned int darkTimeSleepDurationSeconds;
     unsigned int sendDataFrequency;
+    unsigned int sendSupplementalDataFrequency;
     bool resetSendDataCounterAfterFailure;
 
     float safeModeVoltage;

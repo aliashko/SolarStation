@@ -40,20 +40,35 @@ const char AT_CMD_ECHO[] PROGMEM = "ATE1&W";                                  //
 const char AT_CMD_CPIN_TEST[] PROGMEM = "AT+CPIN?";                           // Check SIM card status
 const char AT_CMD_CPIN_PIN[] PROGMEM = "AT+CPIN=";                            // Configure PIN code
 
-const char AT_CMD_IPR_9600[] PROGMEM = "AT+IPR=9600";                                 // Configure baud rate
+const char AT_CMD_IPR_9600[] PROGMEM = "AT+IPR=9600";                         // Configure baud rate
 
 const char AT_CMD_CSQ[] PROGMEM = "AT+CSQ";                                   // Check the signal strengh
 const char AT_CMD_ATI[] PROGMEM = "ATI";                                      // Output version of the module
 const char AT_CMD_GMR[] PROGMEM = "AT+GMR";                                   // Output version of the firmware
 const char AT_CMD_SIM_CARD[] PROGMEM = "AT+CCID";						                  // Get Sim Card version
 
+const char AT_CMD_COPS_GET_LIST[] PROGMEM = "AT+COPS=?";						          // Get operators list
+const char AT_CMD_COPN_GET_LIST[] PROGMEM = "AT+COPN";						            // Get operators list 2
+const char AT_CMD_COPS_TEST[] PROGMEM = "AT+COPS?";						                // Get current operator
+const char AT_CMD_COPS_SET[] PROGMEM = "AT+COPS=";						                // Set operator
+const char AT_CMD_CBAND_TEST[] PROGMEM = "AT+CBAND?";						              // Get current band used
+const char AT_CMD_CBAND_SET[] PROGMEM = "AT+CBAND=";                          // Set band, possible values:"DCS_MODE" "GSM850_MODE" "GSM850_PCS_MODE"
+/*Full list: EGSM_MODE PGSM_MODE DCS_MODE GSM850_MODE PCS_MODE EGSM_DCS_MODE  GSM850_PCS_MODE EGSM_PCS_MODE ALL_BAND */
+const char AT_CMD_CUSD[] PROGMEM = "AT+CUSD=1,";				                      // USSD command ex. \"*111#\"
+const char AT_CMD_CBC[] PROGMEM = "AT+CBC";						                        // Check power
+
+const char AT_CMD_CLTS[] PROGMEM = "AT+CLTS?";						                    // Get local time
+const char AT_CMD_CMEE[] PROGMEM = "AT+CMEE=2";						                    // Enable debug mode (return verbose errors)
+const char AT_CMD_CNETSCAN[] PROGMEM = "AT+CNETSCAN";						              // Scan all operators
+const char AT_CMD_CEGPRS[] PROGMEM = "AT+CEGPRS=";						                // Enable disable EDGE. Restart after ex. 1
+
 const char AT_CMD_CFUN_TEST[] PROGMEM = "AT+CFUN?";                           // Check the current power mode
 const char AT_CMD_CFUN0[] PROGMEM = "AT+CFUN=0";                              // Switch minimum power mode
 const char AT_CMD_CFUN1[] PROGMEM = "AT+CFUN=1";                              // Switch normal power mode
 const char AT_CMD_CFUN4[] PROGMEM = "AT+CFUN=4";                              // Switch sleep power mode
 
-const char AT_CMD_CSCLK2[] PROGMEM = "AT+CSCLK=2";                              // Switch on sleep mode
-const char AT_CMD_CSCLK0[] PROGMEM = "AT+CSCLK=0";                              // Switch off sleep mode
+const char AT_CMD_CSCLK2[] PROGMEM = "AT+CSCLK=2";                            // Switch on sleep mode
+const char AT_CMD_CSCLK0[] PROGMEM = "AT+CSCLK=0";                            // Switch off sleep mode
 
 const char AT_CMD_CREG_TEST[] PROGMEM = "AT+CREG?";                           // Check the network registration status
 const char AT_CMD_SAPBR_GPRS[] PROGMEM = "AT+SAPBR=3,1,\"Contype\",\"GPRS\""; // Configure the GPRS bearer
@@ -790,6 +805,119 @@ uint8_t SIM800L::getSignal() {
   return 0;
 }
 
+
+char* SIM800L::getCurrentBand(){  
+  sendCommand_P(AT_CMD_CBAND_TEST);
+  if(readResponse(DEFAULT_TIMEOUT)) {
+    // Extract the value
+    int16_t idx = strIndex(internalBuffer, "+CBAND:") + 8;
+    int16_t idxEnd = strIndex(internalBuffer, "\r", idx+1);
+
+    // Store it on the recv buffer (not used at the moment)
+    initRecvBuffer();
+    for(uint16_t i = 0; i < idxEnd - idx; i++) {
+      recvBuffer[i] = internalBuffer[idx + i];
+    }
+    return getDataReceived();
+  } else {
+    return NULL;
+  }
+}
+
+bool SIM800L::setBand(const char *band){
+  sendCommand_P(AT_CMD_CBAND_SET, band);   
+  return readResponseCheckAnswer_P(DEFAULT_TIMEOUT, AT_RSP_OK);
+}
+
+bool SIM800L::switchEdgeMode(bool enable){
+  sendCommand_P(AT_CMD_CEGPRS, enable?"1":"0", false);   
+  return readResponseCheckAnswer_P(DEFAULT_TIMEOUT, AT_RSP_OK);
+}
+
+char* SIM800L::ussdCommand(const char *number){
+  sendCommand_P(AT_CMD_CUSD, number);
+  if(readResponse(DEFAULT_TIMEOUT)) {
+    // Extract the value
+    int16_t idx = strIndex(internalBuffer, "+CUSD:") + 7;
+    int16_t idxEnd = strIndex(internalBuffer, "\r", idx+1);
+
+    // Store it on the recv buffer (not used at the moment)
+    initRecvBuffer();
+    for(uint16_t i = 0; i < idxEnd - idx; i++) {
+      recvBuffer[i] = internalBuffer[idx + i];
+    }
+    return getDataReceived();
+  } else {
+    return NULL;
+  }
+}
+char* SIM800L::getLocalTime(){
+  sendCommand_P(AT_CMD_CLTS);
+  if(readResponse(DEFAULT_TIMEOUT)) {
+    // Extract the value
+    int16_t idx = strIndex(internalBuffer, "+CLTS:") + 7;
+    int16_t idxEnd = strIndex(internalBuffer, "\r", idx+1);
+
+    // Store it on the recv buffer (not used at the moment)
+    initRecvBuffer();
+    for(uint16_t i = 0; i < idxEnd - idx; i++) {
+      recvBuffer[i] = internalBuffer[idx + i];
+    }
+    return getDataReceived();
+  } else {
+    return NULL;
+  }
+}
+
+// Troubleshooting functions:
+bool SIM800L::enableVerboseErrors(){
+  sendCommand_P(AT_CMD_CMEE);   
+  return readResponseCheckAnswer_P(DEFAULT_TIMEOUT, AT_RSP_OK);
+}
+bool SIM800L::getOperatorsList(){
+  sendCommand_P(AT_CMD_COPS_GET_LIST);  
+  //sendCommand_P(AT_CMD_COPN_GET_LIST);  
+  return readResponse(65000);
+}
+bool SIM800L::scanAllNetwork(){
+  sendCommand_P(AT_CMD_CNETSCAN);   
+  return readResponse(65000);
+}
+bool SIM800L::getCurrentOperator(){
+  sendCommand_P(AT_CMD_COPS_TEST);   
+  return readResponse(DEFAULT_TIMEOUT);
+}
+bool SIM800L::setOperator(const char *operatorString){
+  sendCommand_P(AT_CMD_COPS_SET, operatorString, false);   
+  return readResponseCheckAnswer_P(DEFAULT_TIMEOUT, AT_RSP_OK);
+}
+float SIM800L::getPowerVoltage(){
+  sendCommand_P(AT_CMD_CBC);
+  if(readResponse(DEFAULT_TIMEOUT)) {
+    // Extract the value
+    int16_t idx = strIndex(internalBuffer, "+CBC:") + 6;
+    int16_t idxEnd = strIndex(internalBuffer, "\r", idx+1);
+
+    // Store it on the recv buffer (not used at the moment)
+    initRecvBuffer();
+    for(uint16_t i = 0; i < idxEnd - idx; i++) {
+      recvBuffer[i] = internalBuffer[idx + i];
+    }
+    auto response = getDataReceived();
+    // +CBC: <bcs>, <bcl>,<voltage>
+    auto startIndex = strrchr(response, ',') + 1;
+    if(startIndex == NULL) return -1;
+
+    char strValue[6];
+    strcpy(strValue, startIndex);    
+    auto voltage = atoi(strValue);
+    return (float)voltage / 1000.0;
+  } else {
+    return -1;
+  }
+}
+
+
 /*****************************************************************************************
  * HELPERS
  *****************************************************************************************/
@@ -872,21 +1000,21 @@ void SIM800L::sendCommand_P(const char* command) {
 /**
  * Send AT command to the module with a parameter
  */
-void SIM800L::sendCommand(const char* command, const char* parameter) {
+void SIM800L::sendCommand(const char* command, const char* parameter, bool addQuotes) {
   if(enableDebug) {
     debugStream->print(F("SIM800L : Send \""));
     debugStream->print(command);
-    debugStream->print(F("\""));
+    if(addQuotes)debugStream->print(F("\""));
     debugStream->print(parameter);
-    debugStream->print(F("\""));
+    if(addQuotes)debugStream->print(F("\""));
     debugStream->println(F("\""));
   }
 
   purgeSerial();
   stream->write(command);
-  stream->write("\"");
+  if(addQuotes)stream->write("\"");
   stream->write(parameter);
-  stream->write("\"");
+  if(addQuotes)stream->write("\"");
   stream->write("\r\n");
   purgeSerial();
 }
@@ -894,10 +1022,10 @@ void SIM800L::sendCommand(const char* command, const char* parameter) {
 /**
  * Send AT command coming from the PROGMEM with a parameter
  */
-void SIM800L::sendCommand_P(const char* command, const char* parameter) {
+void SIM800L::sendCommand_P(const char* command, const char* parameter, bool addQuotes) {
   char cmdBuff[32];
   strcpy_P(cmdBuff, command);
-  sendCommand(cmdBuff, parameter);
+  sendCommand(cmdBuff, parameter, addQuotes);
 }
 
 /**

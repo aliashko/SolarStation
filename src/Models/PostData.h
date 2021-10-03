@@ -17,6 +17,8 @@ struct PostData {
     float gsmVoltage;
     uint8_t powerMode;
 
+    int simMoneyBalance;
+
     unsigned long restartsCount;
     unsigned long gsmErrors;
 };

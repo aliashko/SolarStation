@@ -18,6 +18,7 @@ bool WebClient::connect(){
     if(!_gsm->connect())return false;
     Watchdog.reset();
     lastSignalLevel = _gsm->currentSignalLevel;
+    lastSIMVoltage = _gsm->currentSIMVoltage;
     return true;
 }
 
@@ -41,7 +42,7 @@ bool WebClient::postData(PostData data, GetData* gdata){
     BackendClientConfig config;
     char response[HTTP_RESPONSE_BUFFER]; int httpCode;
 
-    char request[140];char buf[12];
+    char request[150];char buf[12];
     request[0] = '\0';
 
     strcat(request,"{");
@@ -57,6 +58,7 @@ bool WebClient::postData(PostData data, GetData* gdata){
     itoa((int)(data.arduinoVoltage*100),buf,10);jsonConcat(request, "av", buf);
     itoa((int)(data.gsmVoltage*100),buf,10);jsonConcat(request, "gv", buf);
     utoa(data.powerMode,buf,10);jsonConcat(request, "pm", buf);
+    if(data.simMoneyBalance != -1){itoa(data.simMoneyBalance,buf,10);jsonConcat(request, "mb", buf);}
     ultoa(data.restartsCount,buf,10);jsonConcat(request, "rc", buf);
     ultoa(data.gsmErrors,buf,10);jsonConcat(request, "ge", buf);
     strcat(request,"}");
@@ -70,6 +72,7 @@ bool WebClient::postData(PostData data, GetData* gdata){
     intValue = readIntJsonField(response, "lsd:");if(intValue != -1)gdata->lightTimeSleepDurationSeconds = intValue;
     intValue = readIntJsonField(response, "dsd:");if(intValue != -1)gdata->darkTimeSleepDurationSeconds = intValue;
     intValue = readIntJsonField(response, "sdf:");if(intValue != -1)gdata->sendDataFrequency = intValue;
+    intValue = readIntJsonField(response, "ssf:");if(intValue != -1)gdata->sendSupplementalDataFrequency = intValue;
     intValue = readIntJsonField(response, "rsc:");if(intValue != -1)gdata->resetSendDataCounterAfterFailure = (intValue == 1);
 
     floatValue = readFloatJsonField(response, "smv:");if(floatValue != -1)gdata->safeModeVoltage = floatValue;
@@ -81,6 +84,31 @@ bool WebClient::postData(PostData data, GetData* gdata){
     Watchdog.reset();
 
     return true;
+}
+
+int WebClient::getBalance(){
+    GsmConfiguration config;
+    char response[USSD_RESPONSE_BUFFER];
+    
+    if(!_gsm->sendUSSDCommand(config.CheckBalanceUssd, response, 2)) {
+        Watchdog.reset();
+        return -1;
+    }
+
+    char* amountEnd = strstr(response, " grn");
+    if(amountEnd == NULL) return -1;
+    amountEnd = strchr(amountEnd-7, '.');
+    if(amountEnd == NULL) return -1;
+
+    char* amountStart = strchr(amountEnd-5, ' ');  
+    if(amountStart == NULL) return -1;
+    amountStart++;
+
+    char strValue[5];
+    strncpy(strValue, amountStart, amountEnd - amountStart);
+    strValue[amountEnd - amountStart] = '\0';
+
+    return atoi(strValue);
 }
 
 int WebClient::readIntJsonField(char* str, const char* field){

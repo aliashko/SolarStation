@@ -26,7 +26,10 @@ public:
     void sleepMode(bool sleepModeOn);
 
     bool sendRequest(const char* verb, const char* url, char* body, int timeout, char* response, int* httpCode);       
+    bool sendUSSDCommand(const char* ussdCommand, char* response, uint8_t retriesCount = 0);
+
     int currentSignalLevel = -1;
+    float currentSIMVoltage = -1;
 private:
     bool _isConnected = false;
 

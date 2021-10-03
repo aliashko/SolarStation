@@ -29,7 +29,11 @@ GsmClient::GsmClient(
 		_sim800 = new SIM800L((Stream *)_simSerial, _resetPin, 150, _httpResponseBuffer);
 		#else
 		_sim800 = new SIM800L((Stream *)_simSerial, _resetPin, 150, _httpResponseBuffer, (Stream *)&Serial);
-		#endif		
+		#endif	
+
+		#ifdef GSM_DEBUG 
+		//GSM_SERIAL_MONITOR.begin(9600);
+		#endif	
 }
 bool GsmClient::connect(){
 	sleepMode(false);
@@ -45,7 +49,6 @@ bool GsmClient::connect(){
 
 bool GsmClient::connectInternal(){
 	#ifdef GSM_DEBUG 
-	GSM_SERIAL_MONITOR.begin(9600);
 	GSM_SERIAL_MONITOR.println("Initializing modem...");
 	#endif
 
@@ -61,23 +64,50 @@ bool GsmClient::connectInternal(){
 		if(i >= MAX_RETRY_COUNT) return false;
 	}
 	#ifdef GSM_DEBUG 
-	Serial.println(F("Setup Complete!"));
+	Serial.println(F("Initializing complete!"));
+	//_sim800->enableVerboseErrors();
 	#endif
 
 	// Wait for the GSM signal
-	currentSignalLevel = -1;
 	currentSignalLevel = _sim800->getSignal();
 	for(uint8_t i = 0; currentSignalLevel <= 0; i++) {
 		safeDelay(_operationsDelay);
 		Watchdog.reset();
 		currentSignalLevel = _sim800->getSignal();
-		if(i >= MAX_RETRY_COUNT) return false;
-	}
+		if(i >= MAX_RETRY_COUNT * 2) return false;
+	}	
 	#ifdef GSM_DEBUG 
 	Serial.print(F("Signal OK (strenght: "));
 	Serial.print(currentSignalLevel);
 	Serial.println(F(")"));
 	#endif
+
+	safeDelay(_operationsDelay);
+	Watchdog.reset();
+
+	#ifdef GSM_DEBUG
+	Serial.print(F("Current band: "));
+	Serial.println(_sim800->getCurrentBand());
+	safeDelay(_operationsDelay);
+	
+	/*_sim800->setBand("DCS_MODE");delay(_operationsDelay);
+	Serial.print(F("Current band: "));
+	Serial.println(_sim800->getCurrentBand());*/
+	#endif
+
+	currentSIMVoltage = _sim800->getPowerVoltage();
+	for(uint8_t i = 0; currentSIMVoltage < 0; i++) {
+		safeDelay(_operationsDelay);
+		Watchdog.reset();
+		currentSIMVoltage = _sim800->getPowerVoltage();
+		if(i == 3) break;
+	}	
+
+	#ifdef GSM_DEBUG 
+	Serial.print(F("SIM Voltage: "));
+	Serial.println(currentSIMVoltage);
+	#endif
+
 	safeDelay(_operationsDelay);
 	Watchdog.reset();
 
@@ -157,7 +187,7 @@ void GsmClient::sleepMode(bool sleepModeOn){
 
 void GsmClient::powerModeInternal(bool lowPowerMode){
 	for(int i=0; i<2;i++){
-		bool powerMode = _sim800->setPowerMode(lowPowerMode ? SLEEP : NORMAL);		
+		bool powerMode = _sim800->setPowerMode(lowPowerMode ? MINIMUM : NORMAL);		
 		#ifdef GSM_DEBUG 
 		if(powerMode) {
 			Serial.print(F("Power mode isLow="));Serial.println(lowPowerMode);
@@ -240,4 +270,20 @@ bool GsmClient::sendRequest(const char* verb, const char* url, char* body, int t
 		return false;
 	}	
 	return true;
+}
+
+bool GsmClient::sendUSSDCommand(const char* ussdCommand, char* response, uint8_t retriesCount){
+	strcpy(response, _sim800->ussdCommand(ussdCommand));
+	for(uint8_t i = 0; i < retriesCount && response == NULL; i++) {
+		safeDelay(_operationsDelay);
+		Watchdog.reset();
+		strcpy(response, _sim800->ussdCommand(ussdCommand));
+	}
+
+	#ifdef GSM_DEBUG
+	Serial.print(F("USSD "));Serial.print(ussdCommand);Serial.print(F(": "));
+	Serial.println(response);
+	#endif
+
+	return response != NULL;
 }

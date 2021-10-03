@@ -13,7 +13,7 @@ PowerManager::PowerManager(){
     digitalWrite(SIM800_POWER_CONTROL_PIN, isGsmEnabled);
 }
 
-void PowerManager::deepSleep(int seconds){//seconds=10;
+void PowerManager::deepSleep(int seconds){seconds=10;
     #ifdef DEBUG
     Serial.print("PowerManager::deepSleep ");Serial.println(seconds);
     #endif

@@ -12,8 +12,10 @@ public:
     void resetDevice();
     void sleepMode(bool sleepModeOn);
     bool postData(PostData data, GetData* gdata);
+    int getBalance();
 
     int lastSignalLevel = -1;
+    float lastSIMVoltage = -1;
 
 private:
     GsmClient* _gsm;

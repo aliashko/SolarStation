@@ -8,7 +8,8 @@ const unsigned int GSM_OPERATIONS_DELAY_MS = 1000;
 const unsigned int POWER_SWITCH_STABILIZATION_DELAY = 2000;
 const unsigned int SAFE_MODE_SLEEP_DURATION = 300;
 
-const unsigned int HTTP_RESPONSE_BUFFER = 90;
+const unsigned int HTTP_RESPONSE_BUFFER = 96;
+const unsigned int USSD_RESPONSE_BUFFER = 40;
 
 // POWER (MOSFET CONTROLLING)
 const uint8_t SENSORS_POWER_CONTROL_PIN = 11;
@@ -31,6 +32,7 @@ const uint8_t SIM800_RESET = 10; //3.3V (OR 5 for BLUE)
 //#define SIM_PIN "0000"
 struct GsmConfiguration {
     const char* Apn = "internet";
+    const char* CheckBalanceUssd = "*111#";
 };
 
 // VOLTAGE SENSORS SETTINGS
